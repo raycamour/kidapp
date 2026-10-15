@@ -1,34 +1,24 @@
 [
   {
-    "id": "first",
-    "name": "First grade words",
+    "id": "all",
+    "name": "All words",
     "words": [
       "after", "again", "an", "any", "as", "ask", "by", "could", "every", "fly",
       "from", "give", "going", "had", "has", "her", "him", "how", "just", "know",
       "let", "live", "may", "of", "old", "once", "open", "over", "put", "round",
-      "some", "stop", "take", "thank", "them", "then", "think", "walk", "were", "when", 
-      "am", "as", "an", "has", "his", "into", "if", "this", "get", "then", 
-      "them", "ten", "said", "and", "at", "can", "ran", "man", "when", "let",
-      "went", "yes", "yet", "us", "thing", "long", "such", "much", "wish", "wash", 
-      "pick", "with", "back", "black", "well", "ball", "shall", "call", "pull", "off",
-      "stop", "ask", "just", "last", "want", "think", "help", "jump", "next", "drink",
-      "bring", "left", "from", "Ray", "Chelcea", "Andre", "Veronica"
-    ]
-  },
-  {
-    "id": "starter",
-    "name": "Starter words",
-    "words": [
-      "a", "and", "away", "big", "blue", "can", "come", "down", "find", "for",
-      "funny", "go", "help", "here", "I", "in", "is", "it", "jump", "little",
-      "look", "make", "me", "my", "not", "one", "play", "red", "run", "said",
+      "some", "stop", "take", "thank", "them", "then", "think", "walk", "were", "when",
+      "am", "his", "into", "if", "this", "get", "ten", "said", "and", "at",
+      "can", "ran", "man", "went", "yes", "yet", "us", "thing", "long", "such",
+      "much", "wish", "wash", "pick", "with", "back", "black", "well", "ball", "shall",
+      "call", "pull", "off", "last", "want", "help", "jump", "next", "drink", "bring",
+      "left", "Ray", "Chelcea", "Andre", "Veronica", "a", "away", "big", "blue", "come",
+      "down", "find", "for", "funny", "go", "here", "I", "in", "is", "it",
+      "little", "look", "make", "me", "my", "not", "one", "play", "red", "run",
       "see", "the", "three", "to", "two", "up", "we", "where", "yellow", "you",
-      "all", "am", "are", "at", "ate", "be", "black", "brown", "but", "came",
-      "did", "do", "eat", "four", "get", "good", "have", "he", "into", "like",
-      "must", "new", "no", "now", "on", "our", "out", "please", "pretty", "ran",
-      "ride", "saw", "say", "she", "so", "soon", "that", "there", "they", "this",
-      "too", "under", "want", "was", "well", "went", "what", "white", "who", "will",
-      "with", "yes"
+      "all", "are", "ate", "be", "brown", "but", "came", "did", "do", "eat",
+      "four", "good", "have", "he", "like", "must", "new", "no", "now", "on",
+      "our", "out", "please", "pretty", "ride", "saw", "say", "she", "so", "soon",
+      "that", "there", "they", "too", "under", "was", "what", "white", "who", "will"
     ]
   }
 ]
