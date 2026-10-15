@@ -103,8 +103,19 @@ function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.to
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 let voice=null,utter=null;
 function pickVoice(){
-  const v=speechSynthesis.getVoices();
-  voice=v.find(x=>x.lang==="en-US"&&/enhanced|premium|samantha|ava/i.test(x.name))||v.find(x=>x.lang==="en-US")||v.find(x=>x.lang&&x.lang.startsWith("en"))||null;
+  const v=speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.replace("_","-").startsWith("en"));
+  const female=/samantha|ava|allison|susan|zoe|nicky|joelle|karen|moira|tessa|serena|kate|female/i;
+  const male=/alex|fred|tom|aaron|evan|nathan|daniel|oliver|arthur|gordon|rishi|male/i;
+  const us=x=>x.lang.replace("_","-")==="en-US";
+  const good=x=>/enhanced|premium/i.test(x.name);
+  const pick=/\b(ava|zoe)\b/i;
+  voice=v.find(x=>pick.test(x.name)&&/premium/i.test(x.name))
+     ||v.find(x=>pick.test(x.name)&&/enhanced/i.test(x.name))
+     ||v.find(x=>us(x)&&female.test(x.name)&&good(x))
+     ||v.find(x=>us(x)&&female.test(x.name))
+     ||v.find(x=>female.test(x.name)&&!/\bmale\b/i.test(x.name.replace(/female/i,"")))
+     ||v.find(x=>us(x)&&!male.test(x.name))
+     ||v.find(x=>us(x))||v[0]||null;
 }
 try{speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}catch(e){}
 function say(w){
@@ -114,6 +125,7 @@ function say(w){
     s.resume();
     utter=new SpeechSynthesisUtterance(SAY[w]||w);
     utter.lang="en-US";utter.rate=.8;utter.volume=1;
+    if(!voice)pickVoice();
     if(voice)utter.voice=voice;
     s.speak(utter);
   }catch(e){}
