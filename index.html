@@ -73,7 +73,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     </div>
     <div class="card" id="card">
       <div class="word" id="word"></div>
-      <button class="speak" aria-label="Hear the word"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
+      <button class="speak" id="speak" aria-label="Hear the word"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
     </div>
     <div class="actions">
       <button class="again" id="again">Practice again</button>
@@ -144,7 +144,6 @@ function render(){
   $("word").textContent=queue[0];
   $("dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<total-queue.length?"on":""}"></i>`).join("");
   const c=$("card");c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop");
-  say(queue[0]);
 }
 function know(){
   const w=queue.shift(),s=known(deck.id);s.add(w);learned[deck.id]=[...s];save();
@@ -157,7 +156,7 @@ function finish(){
 }
 
 $("list").addEventListener("click",e=>{const b=e.target.closest(".deck");if(b)start(b.dataset.id)});
-$("card").addEventListener("click",()=>say(queue[0]));
+$("speak").addEventListener("click",()=>say(queue[0]));
 $("know").addEventListener("click",know);
 $("again").addEventListener("click",again);
 $("back").addEventListener("click",home);
