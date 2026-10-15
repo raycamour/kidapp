@@ -241,7 +241,7 @@ function finish(){
   $("doneText").textContent=`You practiced ${total} words today.`;
   show("done");
 }
-let rt="words",ri=0,ritems=[],recording=false,mr=null,stream=null,chunks=[];
+let rt="words",ri=0,ritems=[],recording=false,mr=null,stream=null,chunks=[],stopP=null,stopCb=null,autoplay=true;
 function showRec(){
   const t=ritems[ri]||"",el=$("recText");
   el.textContent=t;el.className=rt==="words"?"word":"sentence";
@@ -256,13 +256,21 @@ function setTab(t){
   showRec();
 }
 function setRecUI(){const b=$("recGo");b.textContent=recording?"■ Stop":"● Record";b.classList.toggle("live",recording)}
-function leaveRec(){
-  try{if(recording&&mr)mr.stop()}catch(e){}
+// stop the current recording, wait until it is saved
+function stopRec(play){
+  if(stopP)return stopP;
+  autoplay=!!play;
+  stopP=new Promise(res=>{stopCb=res;mr.stop()});
+  return stopP;
+}
+async function settleRec(){if(recording||stopP){autoplay=false;await stopRec()}}
+async function leaveRec(){
+  try{await settleRec()}catch(e){}
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
   home();
 }
 async function toggleRec(){
-  if(recording){mr.stop();return}
+  if(recording||stopP){if(!stopP)stopRec(true);return}
   if(!ritems.length)return;
   try{
     if(!navigator.mediaDevices||!window.MediaRecorder){$("recStat").textContent="Recording isn't supported here.";return}
@@ -275,14 +283,18 @@ async function toggleRec(){
     mr.onstop=async()=>{
       recording=false;setRecUI();
       const blob=new Blob(chunks,{type:mr.mimeType||"audio/mp4"});
-      if(blob.size>1000)await saveClip(key,blob);
-      showRec();
-      if(clips.has(key)){player.src=clips.get(key);player.play().catch(()=>{})}
+      try{if(blob.size>1000)await saveClip(key,blob)}catch(e){}
+      const play=autoplay,cb=stopCb;stopCb=null;stopP=null;
+      if(play){
+        showRec();
+        if(clips.has(key)){player.src=clips.get(key);player.play().catch(()=>{})}
+      }
+      if(cb)cb();
     };
     mr.start();recording=true;setRecUI();
   }catch(e){$("recStat").textContent="Microphone is blocked. Tap Allow when asked."}
 }
-function stepRec(d){if(recording||!ritems.length)return;ri=(ri+d+ritems.length)%ritems.length;showRec()}
+async function stepRec(d){if(!ritems.length)return;await settleRec();ri=(ri+d+ritems.length)%ritems.length;showRec()}
 
 function nextSent(){
   if(!sq.length)sq=shuffle(SENTS.slice());
@@ -309,8 +321,8 @@ $("voiceSel").addEventListener("change",e=>{
   pickVoice();say("hello");
 });
 $("recOpen").addEventListener("click",()=>{show("rec");setTab("words")});
-$("tabW").addEventListener("click",()=>{if(!recording)setTab("words")});
-$("tabS").addEventListener("click",()=>{if(!recording)setTab("sent")});
+$("tabW").addEventListener("click",async()=>{await settleRec();setTab("words")});
+$("tabS").addEventListener("click",async()=>{await settleRec();setTab("sent")});
 $("recGo").addEventListener("click",toggleRec);
 $("recPrev").addEventListener("click",()=>stepRec(-1));
 $("recNext").addEventListener("click",()=>stepRec(1));
