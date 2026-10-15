@@ -31,20 +31,22 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .back{background:rgba(255,255,255,.75);border-radius:22px;padding:12px 26px;min-height:60px;font-size:26px}
-.dots{display:flex;gap:10px}
-.dots i{width:20px;height:20px;border-radius:50%;background:rgba(31,42,68,.2)}
+.dots{display:flex;gap:6px}
+.dots i{width:14px;height:14px;border-radius:50%;background:rgba(31,42,68,.2)}
 .dots i.on{background:var(--go)}
 .card{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;
   background-color:var(--paper);border-radius:38px;box-shadow:0 9px 0 rgba(31,42,68,.25);
   background-image:linear-gradient(90deg,transparent 0 11%,var(--margin) 11% calc(11% + 3px),transparent calc(11% + 3px)),
     repeating-linear-gradient(180deg,transparent 0 71px,var(--line) 71px 74px)}
 .word{font-size:clamp(90px,min(24vw,19vh),210px);font-weight:700;letter-spacing:.02em;line-height:1;padding-left:8%}
-.card.pop .word{animation:pop .25s ease-out}
-@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.card.pop .word{animation:none}}
+.sentence{font-size:clamp(48px,min(9.5vw,7vh),84px);font-weight:700;line-height:1.4;text-align:center;padding:0 6% 120px 16%}
+.card.pop .word,.card.pop .sentence{animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.card.pop .word,.card.pop .sentence{animation:none}}
 .speak{position:absolute;right:24px;bottom:24px;width:104px;height:104px;border-radius:50%;background:var(--ink);display:grid;place-items:center}
 .speak svg{width:54px;height:54px;fill:#fff}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
+.actions.one{grid-template-columns:1fr}
 .actions button,.big{min-height:120px;border-radius:30px;font-size:clamp(30px,4.6vw,42px);font-weight:700;color:#fff;box-shadow:0 7px 0 rgba(0,0,0,.25)}
 .actions button:active,.big:active,.deck:active{transform:translateY(5px);box-shadow:none}
 .again{background:var(--again)}
@@ -61,7 +63,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 <div id="app">
   <section class="screen" id="home">
     <h1>Word cards</h1>
-    <p class="sub">Pick a list to practice</p>
+    <p class="sub">Pick something to practice</p>
     <div id="list"></div>
     <button class="link" id="reset">Start over</button>
   </section>
@@ -81,31 +83,46 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     </div>
   </section>
 
+  <section class="screen" id="sent">
+    <div class="top"><button class="back" id="back2">Home</button></div>
+    <div class="card" id="card2">
+      <div class="sentence" id="sentence"></div>
+      <button class="speak" id="speak2" aria-label="Hear the sentence"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
+    </div>
+    <div class="actions one"><button class="know" id="next">Next sentence</button></div>
+  </section>
+
   <section class="screen" id="done">
     <div class="stars">★★★</div>
     <h2>All done!</h2>
     <p id="doneText"></p>
-    <button class="big" id="home2">Pick a list</button>
+    <button class="big" id="home2">Back home</button>
   </section>
 </div>
 
 <script>
-let DECKS=[];
+let DECKS=[],SENTS=[];
 const SAY={a:"uh"};
 const KEY="wordcards-learned-v1";
+const SIZE=20;
 const $=id=>document.getElementById(id);
 let learned=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}})();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(learned))}catch(e){}};
-const known=id=>new Set(learned[id]||[]);
-let deck,queue,total;
+// all words are one stack now; fold in progress saved under the old lists
+if(!Array.isArray(learned.all)){learned={all:[...new Set(Object.values(learned).flat())]};save()}
+const known=()=>new Set(learned.all);
+const allWords=()=>[...new Set(DECKS.flatMap(d=>d.words))];
+let queue=[],total=0,cur="",sq=[];
 
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id))}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pop(id){const c=$(id);c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop")}
+
 let voice=null,utter=null;
 function pickVoice(){
   const v=speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.replace("_","-").startsWith("en"));
   const female=/samantha|ava|allison|susan|zoe|nicky|joelle|karen|moira|tessa|serena|kate|female/i;
-  const male=/alex|fred|tom|aaron|evan|nathan|daniel|oliver|arthur|gordon|rishi|male/i;
+  const male=/alex|fred|tom|aaron|evan|nathan|daniel|oliver|arthur|gordon|rishi/i;
   const us=x=>x.lang.replace("_","-")==="en-US";
   const good=x=>/enhanced|premium/i.test(x.name);
   const pick=/\b(ava|zoe)\b/i;
@@ -113,7 +130,7 @@ function pickVoice(){
      ||v.find(x=>pick.test(x.name)&&/enhanced/i.test(x.name))
      ||v.find(x=>us(x)&&female.test(x.name)&&good(x))
      ||v.find(x=>us(x)&&female.test(x.name))
-     ||v.find(x=>female.test(x.name)&&!/\bmale\b/i.test(x.name.replace(/female/i,"")))
+     ||v.find(x=>female.test(x.name))
      ||v.find(x=>us(x)&&!male.test(x.name))
      ||v.find(x=>us(x))||v[0]||null;
 }
@@ -134,28 +151,27 @@ function say(w){
 document.addEventListener("touchend",()=>{try{speechSynthesis.speak(new SpeechSynthesisUtterance(""))}catch(e){}},{once:true});
 
 function home(){
-  $("list").innerHTML=DECKS.map(d=>{
-    const k=known(d.id).size,pct=Math.round(100*k/d.words.length);
-    return `<button class="deck" data-id="${d.id}"><b>${d.name}</b><span>${k} of ${d.words.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`;
-  }).join("");
+  const all=allWords(),k=known(),n=all.filter(w=>k.has(w)).length,pct=all.length?Math.round(100*n/all.length):0;
+  $("list").innerHTML=
+    `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
+    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b><span style="margin-bottom:0">Read and hear a sentence</span></button>`:"");
   show("home");
 }
-function start(id){
-  deck=DECKS.find(d=>d.id===id);
-  const k=known(id);
-  let pool=deck.words.filter(w=>!k.has(w));
-  if(!pool.length)pool=deck.words.slice();
-  queue=shuffle(pool).slice(0,10);
+function start(){
+  const k=known();
+  let pool=allWords().filter(w=>!k.has(w));
+  if(!pool.length)pool=allWords();
+  queue=shuffle(pool).slice(0,SIZE);
   total=queue.length;
   show("play");render();
 }
 function render(){
   $("word").textContent=queue[0];
   $("dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<total-queue.length?"on":""}"></i>`).join("");
-  const c=$("card");c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop");
+  pop("card");
 }
 function know(){
-  const w=queue.shift(),s=known(deck.id);s.add(w);learned[deck.id]=[...s];save();
+  const w=queue.shift(),s=known();s.add(w);learned.all=[...s];save();
   if(queue.length)render();else finish();
 }
 function again(){queue.push(queue.shift());render()}
@@ -163,15 +179,33 @@ function finish(){
   $("doneText").textContent=`You practiced ${total} words today.`;
   show("done");
 }
+function nextSent(){
+  if(!sq.length)sq=shuffle(SENTS.slice());
+  cur=sq.shift();
+  $("sentence").textContent=cur;
+  pop("card2");
+}
+function startSent(){sq=[];show("sent");nextSent()}
 
-$("list").addEventListener("click",e=>{const b=e.target.closest(".deck");if(b)start(b.dataset.id)});
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest(".deck");if(!b)return;
+  if(b.dataset.act==="sent")startSent();else start();
+});
 $("speak").addEventListener("click",()=>say(queue[0]));
+$("speak2").addEventListener("click",()=>say(cur));
 $("know").addEventListener("click",know);
 $("again").addEventListener("click",again);
+$("next").addEventListener("click",nextSent);
 $("back").addEventListener("click",home);
+$("back2").addEventListener("click",home);
 $("home2").addEventListener("click",home);
-$("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={};save();home()}});
-fetch("words.json",{cache:"no-cache"}).then(r=>r.json()).then(d=>{DECKS=d;home()}).catch(()=>{$("list").innerHTML='<p class="sub">Could not load the word lists.</p>';show("home")});
+$("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={all:[]};save();home()}});
+
+const load=f=>fetch(f,{cache:"no-cache"}).then(r=>{if(!r.ok)throw new Error(f);return r.json()});
+load("words.json")
+  .then(d=>{DECKS=d;return load("sentences.json").catch(()=>[])})
+  .then(s=>{SENTS=s;home()})
+  .catch(()=>{$("list").innerHTML='<p class="sub">Could not load the word lists.</p>';show("home")});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body>
