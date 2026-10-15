@@ -187,7 +187,7 @@ function say(w){
   try{player.pause()}catch(e){}
   if(clips.has(w)){
     try{speechSynthesis.cancel()}catch(e){}
-    player.src=clips.get(w);player.play().catch(()=>{});
+    dirty=true;player.src=clips.get(w);player.play().catch(()=>{});
     return;
   }
   try{
@@ -241,7 +241,7 @@ function finish(){
   $("doneText").textContent=`You practiced ${total} words today.`;
   show("done");
 }
-let rt="words",ri=0,ritems=[],recording=false,mr=null,stream=null,chunks=[],stopP=null,stopCb=null,autoplay=true;
+let rt="words",ri=0,ritems=[],recording=false,mr=null,stream=null,chunks=[],stopP=null,stopCb=null,autoplay=true,dirty=false;
 function showRec(){
   const t=ritems[ri]||"",el=$("recText");
   el.textContent=t;el.className=rt==="words"?"word":"sentence";
@@ -275,7 +275,12 @@ async function toggleRec(){
   try{
     if(!navigator.mediaDevices||!window.MediaRecorder){$("recStat").textContent="Recording isn't supported here.";return}
     try{player.pause()}catch(e){}
-    if(!stream||!stream.active)stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const live=stream&&stream.getAudioTracks().some(t=>t.readyState==="live"&&!t.muted);
+    if(dirty||!live){
+      if(stream)stream.getTracks().forEach(t=>t.stop());
+      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      dirty=false;
+    }
     const mime=["audio/mp4","audio/webm;codecs=opus","audio/webm"].find(t=>MediaRecorder.isTypeSupported(t));
     const key=ritems[ri];chunks=[];
     mr=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
@@ -283,11 +288,14 @@ async function toggleRec(){
     mr.onstop=async()=>{
       recording=false;setRecUI();
       const blob=new Blob(chunks,{type:mr.mimeType||"audio/mp4"});
-      try{if(blob.size>1000)await saveClip(key,blob)}catch(e){}
+      let ok=false;
+      try{if(blob.size>1000){await saveClip(key,blob);ok=true}}catch(e){}
+      if(!ok)dirty=true;
       const play=autoplay,cb=stopCb;stopCb=null;stopP=null;
       if(play){
         showRec();
-        if(clips.has(key)){player.src=clips.get(key);player.play().catch(()=>{})}
+        if(ok){dirty=true;player.src=clips.get(key);player.play().catch(()=>{})}
+        else $("recStat").textContent="Didn't hear anything. Tap Record to try again.";
       }
       if(cb)cb();
     };
