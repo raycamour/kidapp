@@ -104,7 +104,25 @@ let deck,queue,total;
 
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id))}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function say(w){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(SAY[w]||w);u.lang="en-US";u.rate=.8;speechSynthesis.speak(u)}catch(e){}}
+let voice=null,utter=null;
+function pickVoice(){
+  const v=speechSynthesis.getVoices();
+  voice=v.find(x=>x.lang==="en-US"&&/enhanced|premium|samantha|ava/i.test(x.name))||v.find(x=>x.lang==="en-US")||v.find(x=>x.lang&&x.lang.startsWith("en"))||null;
+}
+try{speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}catch(e){}
+function say(w){
+  try{
+    const s=speechSynthesis;
+    if(s.speaking||s.pending)s.cancel();
+    s.resume();
+    utter=new SpeechSynthesisUtterance(SAY[w]||w);
+    utter.lang="en-US";utter.rate=.8;utter.volume=1;
+    if(voice)utter.voice=voice;
+    s.speak(utter);
+  }catch(e){}
+}
+// iPad only allows speech after a touch, so "wake" it on the first one
+document.addEventListener("touchend",()=>{try{speechSynthesis.speak(new SpeechSynthesisUtterance(""))}catch(e){}},{once:true});
 
 function home(){
   $("list").innerHTML=DECKS.map(d=>{
