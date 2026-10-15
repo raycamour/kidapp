@@ -27,10 +27,20 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .deck span{display:block;font-size:clamp(22px,3.4vw,28px);margin:4px 0 16px}
 .bar{display:block;height:18px;border-radius:9px;background:var(--line);overflow:hidden}
 .bar u{display:block;height:100%;background:var(--go);border-radius:9px}
-.link{background:none;text-decoration:underline;font-size:22px;opacity:.75;padding:18px;margin:auto auto 0}
+.link{background:none;text-decoration:underline;font-size:22px;opacity:.75;padding:18px;margin:0}
+.footer{margin-top:auto;display:flex;flex-direction:column;align-items:center}
 
 .voicepick{text-align:center;font-size:22px;margin-top:8px}
 .voicepick select{font:inherit;font-size:22px;padding:10px 14px;border-radius:14px;border:0;max-width:100%}
+.reccount{font-size:24px}
+.tabs{display:flex;gap:12px;margin-bottom:16px}
+.tab{flex:1;min-height:60px;border-radius:20px;background:rgba(255,255,255,.55);font-size:26px}
+.tab.on{background:var(--ink);color:#fff}
+.stat{position:absolute;left:15%;bottom:30px;font-size:24px;opacity:.8}
+.actions.three{grid-template-columns:1fr 2fr 1fr}
+.actions .rec{background:var(--again)}
+.actions .rec.live{background:var(--ink)}
+.actions .nav{background:rgba(255,255,255,.8);color:var(--ink);box-shadow:0 7px 0 rgba(31,42,68,.25)}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .back{background:rgba(255,255,255,.75);border-radius:22px;padding:12px 26px;min-height:60px;font-size:26px}
 .dots{display:flex;gap:6px}
@@ -68,7 +78,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <p class="sub">Pick something to practice</p>
     <div id="list"></div>
     <div class="voicepick"><label>Voice <select id="voiceSel"></select></label></div>
-    <button class="link" id="reset">Start over</button>
+    <div class="footer"><button class="link" id="recOpen">Record my voice</button><button class="link" id="reset">Start over</button></div>
   </section>
 
   <section class="screen" id="play">
@@ -95,6 +105,21 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <div class="actions one"><button class="know" id="next">Next sentence</button></div>
   </section>
 
+  <section class="screen" id="rec">
+    <div class="top"><button class="back" id="back3">Home</button><div class="reccount" id="recCount"></div></div>
+    <div class="tabs"><button class="tab on" id="tabW">Words</button><button class="tab" id="tabS">Sentences</button></div>
+    <div class="card" id="card3">
+      <div id="recText" class="word"></div>
+      <div class="stat" id="recStat"></div>
+      <button class="speak" id="speak3" aria-label="Play"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
+    </div>
+    <div class="actions three">
+      <button class="nav" id="recPrev">Prev</button>
+      <button class="rec" id="recGo">● Record</button>
+      <button class="nav" id="recNext">Next</button>
+    </div>
+  </section>
+
   <section class="screen" id="done">
     <div class="stars">★★★</div>
     <h2>All done!</h2>
@@ -116,6 +141,23 @@ if(!Array.isArray(learned.all)){learned={all:[...new Set(Object.values(learned).
 const known=()=>new Set(learned.all);
 const allWords=()=>[...new Set(DECKS.flatMap(d=>d.words))];
 let queue=[],total=0,cur="",sq=[];
+const clips=new Map(),player=new Audio();
+const req=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+let dbp=null;
+const db=()=>dbp||(dbp=new Promise((ok,no)=>{const r=indexedDB.open("wordcards-audio",1);r.onupgradeneeded=()=>r.result.createObjectStore("clips");r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}));
+function setClip(k,blob){if(clips.has(k))URL.revokeObjectURL(clips.get(k));clips.set(k,URL.createObjectURL(blob))}
+async function saveClip(k,blob){
+  const data=await blob.arrayBuffer(),d=await db();
+  await req(d.transaction("clips","readwrite").objectStore("clips").put({type:blob.type,data},k));
+  setClip(k,blob);
+}
+async function loadClips(){
+  try{
+    const os=(await db()).transaction("clips").objectStore("clips");
+    const keys=await req(os.getAllKeys()),vals=await req(os.getAll());
+    keys.forEach((k,i)=>setClip(k,new Blob([vals[i].data],{type:vals[i].type})));
+  }catch(e){}
+}
 
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id))}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -142,6 +184,12 @@ function pickVoice(){
 }
 try{speechSynthesis.onvoiceschanged=()=>{pickVoice();fillVoices()};pickVoice()}catch(e){}
 function say(w){
+  try{player.pause()}catch(e){}
+  if(clips.has(w)){
+    try{speechSynthesis.cancel()}catch(e){}
+    player.src=clips.get(w);player.play().catch(()=>{});
+    return;
+  }
   try{
     const s=speechSynthesis;
     if(s.speaking||s.pending)s.cancel();
@@ -193,6 +241,49 @@ function finish(){
   $("doneText").textContent=`You practiced ${total} words today.`;
   show("done");
 }
+let rt="words",ri=0,ritems=[],recording=false,mr=null,stream=null,chunks=[];
+function showRec(){
+  const t=ritems[ri]||"",el=$("recText");
+  el.textContent=t;el.className=rt==="words"?"word":"sentence";
+  $("recStat").textContent=clips.has(t)?"Recorded ✓":"Not recorded yet";
+  $("recCount").textContent=`${ritems.filter(x=>clips.has(x)).length} of ${ritems.length} recorded`;
+  pop("card3");
+}
+function setTab(t){
+  rt=t;ritems=t==="words"?allWords():SENTS;
+  $("tabW").classList.toggle("on",t==="words");$("tabS").classList.toggle("on",t==="sent");
+  const f=ritems.findIndex(x=>!clips.has(x));ri=f<0?0:f;
+  showRec();
+}
+function setRecUI(){const b=$("recGo");b.textContent=recording?"■ Stop":"● Record";b.classList.toggle("live",recording)}
+function leaveRec(){
+  try{if(recording&&mr)mr.stop()}catch(e){}
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  home();
+}
+async function toggleRec(){
+  if(recording){mr.stop();return}
+  if(!ritems.length)return;
+  try{
+    if(!navigator.mediaDevices||!window.MediaRecorder){$("recStat").textContent="Recording isn't supported here.";return}
+    try{player.pause()}catch(e){}
+    if(!stream||!stream.active)stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime=["audio/mp4","audio/webm;codecs=opus","audio/webm"].find(t=>MediaRecorder.isTypeSupported(t));
+    const key=ritems[ri];chunks=[];
+    mr=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+    mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+    mr.onstop=async()=>{
+      recording=false;setRecUI();
+      const blob=new Blob(chunks,{type:mr.mimeType||"audio/mp4"});
+      if(blob.size>1000)await saveClip(key,blob);
+      showRec();
+      if(clips.has(key)){player.src=clips.get(key);player.play().catch(()=>{})}
+    };
+    mr.start();recording=true;setRecUI();
+  }catch(e){$("recStat").textContent="Microphone is blocked. Tap Allow when asked."}
+}
+function stepRec(d){if(recording||!ritems.length)return;ri=(ri+d+ritems.length)%ritems.length;showRec()}
+
 function nextSent(){
   if(!sq.length)sq=shuffle(SENTS.slice());
   cur=sq.shift();
@@ -217,8 +308,18 @@ $("voiceSel").addEventListener("change",e=>{
   try{e.target.value?localStorage.setItem(VKEY,e.target.value):localStorage.removeItem(VKEY)}catch(_){}
   pickVoice();say("hello");
 });
+$("recOpen").addEventListener("click",()=>{show("rec");setTab("words")});
+$("tabW").addEventListener("click",()=>{if(!recording)setTab("words")});
+$("tabS").addEventListener("click",()=>{if(!recording)setTab("sent")});
+$("recGo").addEventListener("click",toggleRec);
+$("recPrev").addEventListener("click",()=>stepRec(-1));
+$("recNext").addEventListener("click",()=>stepRec(1));
+$("speak3").addEventListener("click",()=>say(ritems[ri]));
+$("back3").addEventListener("click",leaveRec);
 $("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={all:[]};save();home()}});
 
+loadClips();
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 const load=f=>fetch(f,{cache:"no-cache"}).then(r=>{if(!r.ok)throw new Error(f);return r.json()});
 load("words.json")
   .then(d=>{DECKS=d;return load("sentences.json").catch(()=>[])})
