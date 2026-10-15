@@ -28,7 +28,19 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bar{display:block;height:18px;border-radius:9px;background:var(--line);overflow:hidden}
 .bar u{display:block;height:100%;background:var(--go);border-radius:9px}
 .link{background:none;text-decoration:underline;font-size:22px;opacity:.75;padding:18px;margin:0}
-.footer{margin-top:auto;display:flex;flex-direction:column;align-items:center}
+.footer{margin-top:auto;display:flex;justify-content:space-between;align-items:center}
+.micbtn{width:64px;height:64px;border-radius:50%;background:rgba(31,42,68,.15);display:grid;place-items:center}
+.micbtn svg{width:32px;height:32px;fill:var(--ink)}
+#gate{position:fixed;inset:0;background:rgba(31,42,68,.72);display:none;align-items:center;justify-content:center;z-index:10;padding:20px}
+#gate.on{display:flex}
+.gatebox{background:#fff;border-radius:30px;padding:36px;width:min(520px,100%);text-align:center}
+.gatebox p{font-size:26px;margin:0 0 14px}
+#gateQ{font-size:48px!important;font-weight:700}
+#gateA{font:inherit;font-size:40px;width:100%;text-align:center;padding:12px;border-radius:16px;border:3px solid var(--line);color:var(--ink)}
+.gbtns{display:flex;gap:16px;margin-top:20px}
+.gbtns button{flex:1;min-height:80px;border-radius:22px;font-size:30px;color:#fff;background:var(--go)}
+#gateNo{background:rgba(31,42,68,.65)}
+#gateMsg{margin:14px 0 0!important;min-height:34px;color:var(--again)}
 
 .voicepick{text-align:center;font-size:22px;margin-top:8px}
 .voicepick select{font:inherit;font-size:22px;padding:10px 14px;border-radius:14px;border:0;max-width:100%}
@@ -78,7 +90,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <p class="sub">Pick something to practice</p>
     <div id="list"></div>
     <div class="voicepick"><label>Voice <select id="voiceSel"></select></label></div>
-    <div class="footer"><button class="link" id="recOpen">Record my voice</button><button class="link" id="reset">Start over</button></div>
+    <div class="footer"><button class="micbtn" id="recOpen" aria-label="Parents: record voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button><button class="link" id="reset">Start over</button></div>
   </section>
 
   <section class="screen" id="play">
@@ -126,6 +138,16 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <p id="doneText"></p>
     <button class="big" id="home2">Back home</button>
   </section>
+</div>
+
+<div id="gate">
+  <div class="gatebox">
+    <p>Parents only. Solve to continue:</p>
+    <p id="gateQ"></p>
+    <input id="gateA" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Answer">
+    <p id="gateMsg"></p>
+    <div class="gbtns"><button id="gateNo">Cancel</button><button id="gateYes">Open</button></div>
+  </div>
 </div>
 
 <script>
@@ -328,7 +350,25 @@ $("voiceSel").addEventListener("change",e=>{
   try{e.target.value?localStorage.setItem(VKEY,e.target.value):localStorage.removeItem(VKEY)}catch(_){}
   pickVoice();say("hello");
 });
-$("recOpen").addEventListener("click",()=>{show("rec");setTab("words")});
+let gateAns=0;
+function openGate(msg){
+  const a=6+Math.floor(Math.random()*4),b=6+Math.floor(Math.random()*4);
+  gateAns=a*b;
+  $("gateQ").textContent=`${a} × ${b} = ?`;
+  $("gateA").value="";
+  $("gateMsg").textContent=msg||"";
+  $("gate").classList.add("on");
+  setTimeout(()=>$("gateA").focus(),50);
+}
+function closeGate(){$("gate").classList.remove("on");$("gateA").blur()}
+function tryGate(){
+  if(parseInt($("gateA").value,10)===gateAns){closeGate();show("rec");setTab("words")}
+  else openGate("Not quite. Ask a grown-up!");
+}
+$("recOpen").addEventListener("click",()=>openGate());
+$("gateYes").addEventListener("click",tryGate);
+$("gateNo").addEventListener("click",closeGate);
+$("gateA").addEventListener("keydown",e=>{if(e.key==="Enter")tryGate()});
 $("tabW").addEventListener("click",async()=>{await settleRec();setTab("words")});
 $("tabS").addEventListener("click",async()=>{await settleRec();setTab("sent")});
 $("recGo").addEventListener("click",toggleRec);
