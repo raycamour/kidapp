@@ -29,6 +29,8 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bar u{display:block;height:100%;background:var(--go);border-radius:9px}
 .link{background:none;text-decoration:underline;font-size:22px;opacity:.75;padding:18px;margin:auto auto 0}
 
+.voicepick{text-align:center;font-size:22px;margin-top:8px}
+.voicepick select{font:inherit;font-size:22px;padding:10px 14px;border-radius:14px;border:0;max-width:100%}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .back{background:rgba(255,255,255,.75);border-radius:22px;padding:12px 26px;min-height:60px;font-size:26px}
 .dots{display:flex;gap:6px}
@@ -65,6 +67,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <h1>Word cards</h1>
     <p class="sub">Pick something to practice</p>
     <div id="list"></div>
+    <div class="voicepick"><label>Voice <select id="voiceSel"></select></label></div>
     <button class="link" id="reset">Start over</button>
   </section>
 
@@ -119,8 +122,11 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function pop(id){const c=$(id);c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop")}
 
 let voice=null,utter=null;
+const VKEY="wordcards-voice";
+const englishVoices=()=>{try{return speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.replace("_","-").startsWith("en"))}catch(e){return[]}};
 function pickVoice(){
-  const v=speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.replace("_","-").startsWith("en"));
+  const v=englishVoices();
+  try{const saved=localStorage.getItem(VKEY),m=saved&&v.find(x=>x.name===saved);if(m){voice=m;return}}catch(e){}
   const female=/samantha|ava|allison|susan|zoe|nicky|joelle|karen|moira|tessa|serena|kate|female/i;
   const male=/alex|fred|tom|aaron|evan|nathan|daniel|oliver|arthur|gordon|rishi/i;
   const us=x=>x.lang.replace("_","-")==="en-US";
@@ -134,7 +140,7 @@ function pickVoice(){
      ||v.find(x=>us(x)&&!male.test(x.name))
      ||v.find(x=>us(x))||v[0]||null;
 }
-try{speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}catch(e){}
+try{speechSynthesis.onvoiceschanged=()=>{pickVoice();fillVoices()};pickVoice()}catch(e){}
 function say(w){
   try{
     const s=speechSynthesis;
@@ -150,7 +156,15 @@ function say(w){
 // iPad only allows speech after a touch, so "wake" it on the first one
 document.addEventListener("touchend",()=>{try{speechSynthesis.speak(new SpeechSynthesisUtterance(""))}catch(e){}},{once:true});
 
+function fillVoices(){
+  const sel=$("voiceSel");if(!sel)return;
+  let saved="";try{saved=localStorage.getItem(VKEY)||""}catch(e){}
+  sel.innerHTML='<option value="">Automatic</option>'+englishVoices().map(x=>`<option value="${x.name}">${x.name}</option>`).join("");
+  sel.value=saved;
+}
+
 function home(){
+  fillVoices();
   const all=allWords(),k=known(),n=all.filter(w=>k.has(w)).length,pct=all.length?Math.round(100*n/all.length):0;
   $("list").innerHTML=
     `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
@@ -199,6 +213,10 @@ $("next").addEventListener("click",nextSent);
 $("back").addEventListener("click",home);
 $("back2").addEventListener("click",home);
 $("home2").addEventListener("click",home);
+$("voiceSel").addEventListener("change",e=>{
+  try{e.target.value?localStorage.setItem(VKEY,e.target.value):localStorage.removeItem(VKEY)}catch(_){}
+  pickVoice();say("hello");
+});
 $("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={all:[]};save();home()}});
 
 const load=f=>fetch(f,{cache:"no-cache"}).then(r=>{if(!r.ok)throw new Error(f);return r.json()});
