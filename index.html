@@ -159,7 +159,7 @@ $("again").addEventListener("click",again);
 $("back").addEventListener("click",home);
 $("home2").addEventListener("click",home);
 $("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={};save();home()}});
-fetch("words.json").then(r=>r.json()).then(d=>{DECKS=d;home()}).catch(()=>{$("list").innerHTML='<p class="sub">Could not load the word lists.</p>';show("home")});
+fetch("words.json",{cache:"no-cache"}).then(r=>r.json()).then(d=>{DECKS=d;home()}).catch(()=>{$("list").innerHTML='<p class="sub">Could not load the word lists.</p>';show("home")});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body>

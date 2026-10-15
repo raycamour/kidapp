@@ -1,5 +1,5 @@
-const CACHE = "kidapp-v2";
-const FILES = ["./", "index.html", "manifest.json", "icon-180.png"];
+const CACHE = "kidapp-v4";
+const FILES = ["./", "index.html", "manifest.json", "words.json", "icon-180.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
@@ -18,7 +18,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })
       .then(r => {
         const copy = r.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
