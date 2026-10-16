@@ -89,15 +89,22 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bondline{stroke:var(--ink);stroke-width:7;stroke-linecap:round}
 .bondnode{fill:#fff;stroke:var(--ink);stroke-width:6}
 .bondnode.missing{fill:#ffe487}
+.bondnode.correct{fill:#b6eccb;stroke:#16804d;stroke-width:9}
+.bondnode.wrong{fill:#ffc3b9;stroke:#c43d28;stroke-width:9}
 .bondnumber{fill:var(--ink);font-size:54px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+.bondnumber.correct{fill:#12663e}
+.bondnumber.wrong{fill:#a51e12}
+.mathprompt{text-align:center;font-size:clamp(28px,5vw,38px);font-weight:700;margin:0 0 8px}
 .equation{font-size:clamp(34px,7vw,58px);font-weight:700;margin:0 0 4px}
 .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
 .choices button{min-height:86px;border-radius:24px;background:#fff;font-size:clamp(36px,7vw,54px);font-weight:700;box-shadow:0 6px 0 rgba(31,42,68,.22)}
 .choices button:active{transform:translateY(4px);box-shadow:none}
 .choices button:disabled{opacity:.8}
 .choices button.correct{background:#b6eccb}
-.choices button.wrong{background:#ffc3b9}
-.mathfeedback{height:36px;text-align:center;font-size:26px;font-weight:700;margin:8px 0 0}
+.choices button.wrong{background:#ffc3b9;color:#a51e12;outline:5px solid #c43d28}
+.mathfeedback{min-height:42px;text-align:center;font-size:clamp(25px,4.5vw,34px);font-weight:700;margin:8px 0 0}
+.mathfeedback.correct{color:#12663e}
+.mathfeedback.wrong{color:#a51e12}
 .mathnext{min-height:82px!important}
 @media(max-height:700px){.bondsvg{max-height:40vh}.choices button{min-height:70px}}
 </style>
@@ -139,6 +146,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   <section class="screen" id="math">
     <div class="top"><button class="back" id="mathBack">Home</button><div class="reccount" id="mathCount"></div></div>
     <div class="card bondcard" id="bondCard">
+      <p class="mathprompt">Find the missing number</p>
       <svg class="bondsvg" viewBox="0 0 400 300" role="img" aria-label="Number bond diagram">
         <line class="bondline" x1="200" y1="92" x2="105" y2="205"/><line class="bondline" x1="200" y1="92" x2="295" y2="205"/>
         <circle id="bondWholeCircle" class="bondnode" cx="200" cy="75" r="57"/><text id="bondWhole" class="bondnumber" x="200" y="75"></text>
@@ -438,10 +446,11 @@ function renderMath(){
   for(const key of ["whole","partA","partB"]){
     const text=$(key==="whole"?"bondWhole":key==="partA"?"bondPartA":"bondPartB");
     const circle=$(key==="whole"?"bondWholeCircle":key==="partA"?"bondPartACircle":"bondPartBCircle");
-    text.textContent=q.shown[key];circle.classList.toggle("missing",q.blank===key);
+    text.textContent=q.shown[key];text.classList.remove("correct","wrong");
+    circle.classList.remove("correct","wrong");circle.classList.toggle("missing",q.blank===key);
   }
   $("bondEquation").textContent=`${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
-  $("mathFeedback").textContent="";$("mathNext").hidden=true;
+  $("mathFeedback").textContent="";$("mathFeedback").className="mathfeedback";$("mathNext").hidden=true;
   const options=new Set([q.answer]);
   while(options.size<3)options.add(Math.max(0,Math.min(10,q.answer+Math.floor(Math.random()*7)-3)));
   $("mathChoices").innerHTML=shuffle([...options]).map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("");
@@ -450,9 +459,12 @@ function renderMath(){
 $("mathChoices").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b||mathLocked)return;mathLocked=true;
   const answer=Number(b.dataset.answer),correct=answer===mathQuestions[mathIndex].answer;
+  const q=mathQuestions[mathIndex],text=$(q.blank==="whole"?"bondWhole":q.blank==="partA"?"bondPartA":"bondPartB"),circle=$(q.blank==="whole"?"bondWholeCircle":q.blank==="partA"?"bondPartACircle":"bondPartBCircle");
+  text.textContent=answer;text.classList.add(correct?"correct":"wrong");circle.classList.remove("missing");circle.classList.add(correct?"correct":"wrong");
   if(correct)mathScore++;
   [...$("mathChoices").children].forEach(option=>{option.disabled=true;if(Number(option.dataset.answer)===mathQuestions[mathIndex].answer)option.classList.add("correct");else if(option===b)option.classList.add("wrong")});
-  $("mathFeedback").textContent=correct?"That’s right!":"The answer is "+mathQuestions[mathIndex].answer;
+  $("mathFeedback").classList.add(correct?"correct":"wrong");
+  $("mathFeedback").textContent=correct?"✓ Yes! That’s right!":"✗ Not quite! The answer is "+mathQuestions[mathIndex].answer+".";
   $("mathNext").textContent=mathIndex+1===mathQuestions.length?"See my stars":"Next";$("mathNext").hidden=false;
 });
 $("mathNext").addEventListener("click",()=>{
