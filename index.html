@@ -67,6 +67,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.card.pop .word,.card.pop .sentence{animation:none}}
 .speak{position:absolute;right:24px;bottom:24px;width:104px;height:104px;border-radius:50%;background:var(--ink);display:grid;place-items:center}
+.speak:disabled{opacity:.65;cursor:default}
 .speak svg{width:54px;height:54px;fill:#fff}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
 .actions.one{grid-template-columns:1fr}
@@ -98,7 +99,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bondnumber-whole{font-size:68px}
 .bondnumber.correct{fill:#12663e}
 .bondnumber.wrong{fill:#a51e12}
-.equation{font-size:clamp(52px,9vw,84px);font-weight:700;margin:auto 0 0;padding:8px 0;flex:0 0 auto;text-align:center;max-width:100%}
+.equation{font-size:clamp(58px,16vmin,84px);font-weight:700;margin:auto 0 0;padding:8px 0;flex:0 0 auto;text-align:center;max-width:100%}
 .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
 .choices button{min-height:86px;border-radius:24px;background:#fff;font-size:clamp(36px,7vw,54px);font-weight:700;box-shadow:0 6px 0 rgba(31,42,68,.22)}
 .choices button:active{transform:translateY(4px);box-shadow:none}
@@ -238,7 +239,7 @@ function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.to
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function pop(id){const c=$(id);c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop")}
 
-let voice=null,utter=null;
+let voice=null,utter=null,reading=false;
 const englishVoices=()=>{try{return speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.replace("_","-").startsWith("en"))}catch(e){return[]}};
 function pickVoice(){
   const v=englishVoices();
@@ -256,11 +257,16 @@ function pickVoice(){
      ||v.find(x=>us(x))||v[0]||null;
 }
 try{speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}catch(e){}
+function finishReading(){reading=false;document.querySelectorAll(".speak").forEach(b=>b.disabled=false)}
 function say(w){
+  if(reading)return;
+  reading=true;document.querySelectorAll(".speak").forEach(b=>b.disabled=true);
   try{player.pause()}catch(e){}
   if(clips.has(w)){
     try{speechSynthesis.cancel()}catch(e){}
-    dirty=true;player.src=clips.get(w);player.play().catch(()=>{});
+    dirty=true;player.src=clips.get(w);
+    player.onended=finishReading;player.onerror=finishReading;
+    player.play().catch(finishReading);
     return;
   }
   try{
@@ -268,11 +274,12 @@ function say(w){
     if(s.speaking||s.pending)s.cancel();
     s.resume();
     utter=new SpeechSynthesisUtterance(SAY[w]||w);
+    utter.onend=finishReading;utter.onerror=finishReading;
     utter.lang="en-US";utter.rate=.8;utter.volume=1;
     if(!voice)pickVoice();
     if(voice)utter.voice=voice;
     s.speak(utter);
-  }catch(e){}
+  }catch(e){finishReading()}
 }
 // iPad only allows speech after a touch, so "wake" it on the first one
 document.addEventListener("touchend",()=>{try{speechSynthesis.speak(new SpeechSynthesisUtterance(""))}catch(e){}},{once:true});
