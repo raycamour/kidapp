@@ -86,6 +86,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bondcard{flex-direction:column;justify-content:flex-start;gap:4px;padding:12px 6%;overflow-y:auto;background-image:none;background-color:var(--paper)}
 .bondsvg{width:min(100%,460px);max-height:36vh;flex:0 0 auto;overflow:visible}
 .bondline{stroke:var(--ink);stroke-width:7;stroke-linecap:round}
+.bondoperator{fill:var(--ink);font-size:44px;font-weight:700;text-anchor:middle;dominant-baseline:central}
 .bondnode{fill:#fff;stroke:var(--ink);stroke-width:6}
 .bondnode-square{display:none}
 .bondsvg.square-on .bondnode-circle{display:none}
@@ -155,6 +156,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
         <circle id="bondWholeCircle" class="bondnode bondnode-circle" cx="200" cy="82" r="72"/><rect id="bondWholeSquare" class="bondnode bondnode-square" x="128" y="10" width="144" height="144" rx="14"/><text id="bondWhole" class="bondnumber" x="200" y="82"></text>
         <circle id="bondPartACircle" class="bondnode bondnode-circle" cx="95" cy="220" r="57"/><rect id="bondPartASquare" class="bondnode bondnode-square" x="38" y="163" width="114" height="114" rx="14"/><text id="bondPartA" class="bondnumber" x="95" y="220"></text>
         <circle id="bondPartBCircle" class="bondnode bondnode-circle" cx="305" cy="220" r="57"/><rect id="bondPartBSquare" class="bondnode bondnode-square" x="248" y="163" width="114" height="114" rx="14"/><text id="bondPartB" class="bondnumber" x="305" y="220"></text>
+        <text id="bondOperator" class="bondoperator" x="200" y="220" aria-hidden="true">+</text>
       </svg>
       <p class="equation" id="bondEquation"></p>
     </div>
@@ -429,7 +431,14 @@ function makeMathQuestion(bond){
   const blank=["whole","partA","partB"][Math.floor(Math.random()*3)];
   const answer=blank==="whole"?whole:blank==="partA"?partA:partB;
   const shown={whole,partA,partB};shown[blank]="?";
-  return{whole,partA,partB,blank,answer,shown};
+  const operation=Math.random()<0.5?"+":"-";
+  return{whole,partA,partB,blank,answer,shown,operation};
+}
+function mathEquation(q){
+  if(q.operation==="+")return `${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
+  if(q.blank==="whole")return `? - ${q.shown.partA} = ${q.shown.partB}`;
+  if(q.blank==="partA")return `${q.shown.whole} - ? = ${q.shown.partB}`;
+  return `${q.shown.whole} - ${q.shown.partA} = ?`;
 }
 function startMath(){
   mathQuestions=shuffle(MATH.map(makeMathQuestion)).slice(0,10);mathIndex=0;mathScore=0;show("math");renderMath();
@@ -441,8 +450,8 @@ function renderMath(){
   const layouts=[
     {whole:[200,82],partA:[95,220],partB:[305,220]},
     {whole:[200,218],partA:[95,80],partB:[305,80]},
-    {whole:[82,150],partA:[300,80],partB:[300,220]},
-    {whole:[318,150],partA:[100,80],partB:[100,220]}
+    {whole:[82,150],partA:[300,60],partB:[300,240]},
+    {whole:[318,150],partA:[100,60],partB:[100,240]}
   ];
   const layout=layouts[Math.floor(Math.random()*layouts.length)];
   for(const key of ["whole","partA","partB"]){
@@ -460,7 +469,10 @@ function renderMath(){
     const line=$(id);line.setAttribute("x1",layout.whole[0]);line.setAttribute("y1",layout.whole[1]);
     line.setAttribute("x2",layout[key][0]);line.setAttribute("y2",layout[key][1]);
   }
-  $("bondEquation").textContent=`${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
+  const operator=$("bondOperator");operator.textContent=q.operation;
+  operator.setAttribute("x",(layout.partA[0]+layout.partB[0])/2);
+  operator.setAttribute("y",(layout.partA[1]+layout.partB[1])/2);
+  $("bondEquation").textContent=mathEquation(q);
   $("mathFeedback").textContent="";$("mathFeedback").className="mathfeedback";$("mathNext").hidden=true;
   const options=new Set([q.answer]);
   while(options.size<3)options.add(Math.max(0,Math.min(10,q.answer+Math.floor(Math.random()*7)-3)));
@@ -475,7 +487,7 @@ $("mathChoices").addEventListener("click",e=>{
   const square=$(q.blank==="whole"?"bondWholeSquare":q.blank==="partA"?"bondPartASquare":"bondPartBSquare");
   text.textContent=answer;text.classList.add(correct?"correct":"wrong");
   for(const shape of [circle,square]){shape.classList.remove("missing");shape.classList.add(correct?"correct":"wrong")}
-  q.shown[q.blank]=answer;$("bondEquation").textContent=`${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
+  q.shown[q.blank]=answer;$("bondEquation").textContent=mathEquation(q);
   if(correct)mathScore++;
   [...$("mathChoices").children].forEach(option=>{option.disabled=true;if(Number(option.dataset.answer)===mathQuestions[mathIndex].answer)option.classList.add("correct");else if(option===b)option.classList.add("wrong")});
   $("mathFeedback").classList.add(correct?"correct":"wrong");
