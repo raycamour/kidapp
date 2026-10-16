@@ -60,7 +60,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   background-color:var(--paper);border-radius:38px;box-shadow:0 9px 0 rgba(31,42,68,.25);
   background-image:linear-gradient(90deg,transparent 0 11%,var(--margin) 11% calc(11% + 3px),transparent calc(11% + 3px)),
     repeating-linear-gradient(180deg,transparent 0 71px,var(--line) 71px 74px)}
-.word{font-size:clamp(90px,min(24vw,19vh),210px);font-weight:700;letter-spacing:.02em;line-height:1;padding-left:8%}
+.word{font-size:clamp(64px,min(24vw,19vh),210px);font-weight:700;letter-spacing:.02em;line-height:1;width:100%;max-width:100%;padding:0 5%;text-align:center;white-space:nowrap}
 .sentence{font-size:clamp(48px,min(9.5vw,7vh),84px);font-weight:700;line-height:1.4;text-align:center;padding:0 6% 120px 16%}
 .card.pop .word,.card.pop .sentence{animation:pop .25s ease-out}
 @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
@@ -291,9 +291,14 @@ function start(){
   show("play");render();
 }
 function render(){
-  $("word").textContent=queue[0];
+  $("word").textContent=queue[0];fitWord($("word"));
   $("dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<total-queue.length?"on":""}"></i>`).join("");
   pop("card");
+}
+function fitWord(el){
+  el.style.fontSize="";
+  let size=parseFloat(getComputedStyle(el).fontSize);
+  while(el.scrollWidth>el.clientWidth&&size>34){size=Math.max(34,size-2);el.style.fontSize=size+"px"}
 }
 function know(){
   const w=queue.shift(),s=known();s.add(w);learned.all=[...s];save();
@@ -308,6 +313,7 @@ let rt="words",ri=0,ritems=[],recording=false,mr=null,stream=null,chunks=[],stop
 function showRec(){
   const t=ritems[ri]||"",el=$("recText");
   el.textContent=t;el.className=rt==="words"?"word":"sentence";
+  if(rt==="words")fitWord(el);
   $("recStat").textContent=clips.has(t)?"Recorded ✓":"Not recorded yet";
   $("recCount").textContent=`${ritems.filter(x=>clips.has(x)).length} of ${ritems.length} recorded`;
   pop("card3");
