@@ -51,6 +51,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .actions .rec{background:var(--again)}
 .actions .rec.live{background:var(--ink)}
 .actions .nav{background:rgba(255,255,255,.8);color:var(--ink);box-shadow:0 7px 0 rgba(31,42,68,.25)}
+.actions .nav:disabled{opacity:.45;cursor:default}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .back{background:rgba(255,255,255,.75);border-radius:22px;padding:12px 26px;min-height:60px;font-size:26px}
 .dots{display:flex;gap:6px}
@@ -132,8 +133,8 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
       <button class="speak" id="speak" aria-label="Hear the word"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
     </div>
     <div class="actions">
-      <button class="again" id="again">Practice again</button>
-      <button class="know" id="know">I know it!</button>
+      <button class="nav" id="prev">Previous</button>
+      <button class="nav" id="nextWord">Next</button>
     </div>
   </section>
 
@@ -212,7 +213,7 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(learned))}catch(e){}
 if(!Array.isArray(learned.all)){learned={all:[...new Set(Object.values(learned).flat())]};save()}
 const known=()=>new Set(learned.all);
 const allWords=()=>[...new Set(DECKS.flatMap(d=>d.words))];
-let queue=[],total=0,cur="",sq=[];
+let queue=[],total=0,cardIndex=0,cur="",sq=[];
 const clips=new Map(),player=new Audio();
 const req=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
 let dbp=null;
@@ -288,11 +289,13 @@ function start(){
   if(!pool.length)pool=allWords();
   queue=shuffle(pool).slice(0,SIZE);
   total=queue.length;
+  cardIndex=0;
   show("play");render();
 }
 function render(){
-  $("word").textContent=queue[0];fitWord($("word"));
-  $("dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<total-queue.length?"on":""}"></i>`).join("");
+  $("word").textContent=queue[cardIndex];fitWord($("word"));
+  $("dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<=cardIndex?"on":""}"></i>`).join("");
+  $("prev").disabled=cardIndex===0;
   pop("card");
 }
 function fitWord(el){
@@ -300,11 +303,8 @@ function fitWord(el){
   let size=parseFloat(getComputedStyle(el).fontSize);
   while(el.scrollWidth>el.clientWidth&&size>34){size=Math.max(34,size-2);el.style.fontSize=size+"px"}
 }
-function know(){
-  const w=queue.shift(),s=known();s.add(w);learned.all=[...s];save();
-  if(queue.length)render();else finish();
-}
-function again(){queue.push(queue.shift());render()}
+function previousWord(){if(cardIndex>0){cardIndex--;render()}}
+function advanceWord(){if(cardIndex<queue.length-1){cardIndex++;render()}else finish()}
 function finish(){
   $("doneText").textContent=`You practiced ${total} words today.`;
   show("done");
@@ -385,10 +385,10 @@ $("list").addEventListener("click",e=>{
   const b=e.target.closest(".deck");if(!b)return;
   if(b.dataset.act==="sent")startSent();else if(b.dataset.act==="math")startMath();else start();
 });
-$("speak").addEventListener("click",()=>say(queue[0]));
+$("speak").addEventListener("click",()=>say(queue[cardIndex]));
 $("speak2").addEventListener("click",()=>say(cur));
-$("know").addEventListener("click",know);
-$("again").addEventListener("click",again);
+$("prev").addEventListener("click",previousWord);
+$("nextWord").addEventListener("click",advanceWord);
 $("next").addEventListener("click",nextSent);
 $("back").addEventListener("click",home);
 $("back2").addEventListener("click",home);
