@@ -90,11 +90,12 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bondnode-square{display:none}
 .bondsvg.square-on .bondnode-circle{display:none}
 .bondsvg.square-on .bondnode-square{display:block}
-.bondnode.missing{fill:#ffe487}
-.bondnode.subtraction-missing{fill:#cce9f6}
+.bondnode.missing{fill:#f2c14e}
+.bondnode.subtraction-missing{fill:#78b6d6}
 .bondnode.correct{fill:#b6eccb;stroke:#16804d;stroke-width:9}
 .bondnode.wrong{fill:#ffc3b9;stroke:#c43d28;stroke-width:9}
 .bondnumber{fill:var(--ink);font-size:54px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+.bondnumber-whole{font-size:68px}
 .bondnumber.correct{fill:#12663e}
 .bondnumber.wrong{fill:#a51e12}
 .equation{font-size:clamp(52px,9vw,84px);font-weight:700;margin:auto 0 0;padding:8px 0;flex:0 0 auto;text-align:center;max-width:100%}
@@ -153,7 +154,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <div class="card bondcard" id="bondCard">
       <svg class="bondsvg" id="bondSvg" viewBox="0 0 400 300" role="img" aria-label="Number bond diagram">
         <line id="bondLineA" class="bondline" x1="200" y1="82" x2="95" y2="220"/><line id="bondLineB" class="bondline" x1="200" y1="82" x2="305" y2="220"/>
-        <circle id="bondWholeCircle" class="bondnode bondnode-circle" cx="200" cy="82" r="72"/><rect id="bondWholeSquare" class="bondnode bondnode-square" x="128" y="10" width="144" height="144" rx="14"/><text id="bondWhole" class="bondnumber" x="200" y="82"></text>
+        <circle id="bondWholeCircle" class="bondnode bondnode-circle" cx="200" cy="82" r="72"/><rect id="bondWholeSquare" class="bondnode bondnode-square" x="128" y="10" width="144" height="144" rx="14"/><text id="bondWhole" class="bondnumber bondnumber-whole" x="200" y="82"></text>
         <circle id="bondPartACircle" class="bondnode bondnode-circle" cx="95" cy="220" r="57"/><rect id="bondPartASquare" class="bondnode bondnode-square" x="38" y="163" width="114" height="114" rx="14"/><text id="bondPartA" class="bondnumber" x="95" y="220"></text>
         <circle id="bondPartBCircle" class="bondnode bondnode-circle" cx="305" cy="220" r="57"/><rect id="bondPartBSquare" class="bondnode bondnode-square" x="248" y="163" width="114" height="114" rx="14"/><text id="bondPartB" class="bondnumber" x="305" y="220"></text>
       </svg>
