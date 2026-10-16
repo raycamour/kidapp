@@ -4,7 +4,7 @@
   "short_name": "KidApp",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f4e8c3",
-  "theme_color": "#f4e8c3",
+  "background_color": "#ffc83d",
+  "theme_color": "#ffc83d",
   "icons": [{ "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }]
 }
