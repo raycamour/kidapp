@@ -86,18 +86,18 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bondcard{flex-direction:column;justify-content:flex-start;gap:4px;padding:12px 6%;overflow-y:auto;background-image:none;background-color:var(--paper)}
 .bondsvg{width:min(100%,460px);max-height:36vh;flex:0 0 auto;overflow:visible}
 .bondline{stroke:var(--ink);stroke-width:7;stroke-linecap:round}
-.bondoperator{fill:var(--ink);font-size:44px;font-weight:700;text-anchor:middle;dominant-baseline:central}
 .bondnode{fill:#fff;stroke:var(--ink);stroke-width:6}
 .bondnode-square{display:none}
 .bondsvg.square-on .bondnode-circle{display:none}
 .bondsvg.square-on .bondnode-square{display:block}
 .bondnode.missing{fill:#ffe487}
+.bondnode.subtraction-missing{fill:#cce9f6}
 .bondnode.correct{fill:#b6eccb;stroke:#16804d;stroke-width:9}
 .bondnode.wrong{fill:#ffc3b9;stroke:#c43d28;stroke-width:9}
 .bondnumber{fill:var(--ink);font-size:54px;font-weight:700;text-anchor:middle;dominant-baseline:central}
 .bondnumber.correct{fill:#12663e}
 .bondnumber.wrong{fill:#a51e12}
-.equation{font-size:clamp(48px,8vw,72px);font-weight:700;margin:auto 0 0;padding:8px 0;flex:0 0 auto}
+.equation{font-size:clamp(52px,9vw,84px);font-weight:700;margin:auto 0 0;padding:8px 0;flex:0 0 auto;text-align:center;max-width:100%}
 .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
 .choices button{min-height:86px;border-radius:24px;background:#fff;font-size:clamp(36px,7vw,54px);font-weight:700;box-shadow:0 6px 0 rgba(31,42,68,.22)}
 .choices button:active{transform:translateY(4px);box-shadow:none}
@@ -156,7 +156,6 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
         <circle id="bondWholeCircle" class="bondnode bondnode-circle" cx="200" cy="82" r="72"/><rect id="bondWholeSquare" class="bondnode bondnode-square" x="128" y="10" width="144" height="144" rx="14"/><text id="bondWhole" class="bondnumber" x="200" y="82"></text>
         <circle id="bondPartACircle" class="bondnode bondnode-circle" cx="95" cy="220" r="57"/><rect id="bondPartASquare" class="bondnode bondnode-square" x="38" y="163" width="114" height="114" rx="14"/><text id="bondPartA" class="bondnumber" x="95" y="220"></text>
         <circle id="bondPartBCircle" class="bondnode bondnode-circle" cx="305" cy="220" r="57"/><rect id="bondPartBSquare" class="bondnode bondnode-square" x="248" y="163" width="114" height="114" rx="14"/><text id="bondPartB" class="bondnumber" x="305" y="220"></text>
-        <text id="bondOperator" class="bondoperator" x="200" y="220" aria-hidden="true">+</text>
       </svg>
       <p class="equation" id="bondEquation"></p>
     </div>
@@ -450,8 +449,8 @@ function renderMath(){
   const layouts=[
     {whole:[200,82],partA:[95,220],partB:[305,220]},
     {whole:[200,218],partA:[95,80],partB:[305,80]},
-    {whole:[82,150],partA:[300,60],partB:[300,240]},
-    {whole:[318,150],partA:[100,60],partB:[100,240]}
+    {whole:[82,150],partA:[300,80],partB:[300,220]},
+    {whole:[318,150],partA:[100,80],partB:[100,220]}
   ];
   const layout=layouts[Math.floor(Math.random()*layouts.length)];
   for(const key of ["whole","partA","partB"]){
@@ -463,15 +462,16 @@ function renderMath(){
     square.setAttribute("x",x-size/2);square.setAttribute("y",y-size/2);
     text.setAttribute("x",x);text.setAttribute("y",y);
     text.textContent=q.shown[key];text.classList.remove("correct","wrong");
-    for(const shape of [circle,square]){shape.classList.remove("correct","wrong");shape.classList.toggle("missing",q.blank===key)}
+    for(const shape of [circle,square]){
+      shape.classList.remove("correct","wrong","subtraction-missing");
+      shape.classList.toggle("missing",q.blank===key);
+      shape.classList.toggle("subtraction-missing",q.operation==="-"&&q.blank===key);
+    }
   }
   for(const [id,key] of [["bondLineA","partA"],["bondLineB","partB"]]){
     const line=$(id);line.setAttribute("x1",layout.whole[0]);line.setAttribute("y1",layout.whole[1]);
     line.setAttribute("x2",layout[key][0]);line.setAttribute("y2",layout[key][1]);
   }
-  const operator=$("bondOperator");operator.textContent=q.operation;
-  operator.setAttribute("x",(layout.partA[0]+layout.partB[0])/2);
-  operator.setAttribute("y",(layout.partA[1]+layout.partB[1])/2);
   $("bondEquation").textContent=mathEquation(q);
   $("mathFeedback").textContent="";$("mathFeedback").className="mathfeedback";$("mathNext").hidden=true;
   const options=new Set([q.answer]);
@@ -486,7 +486,7 @@ $("mathChoices").addEventListener("click",e=>{
   const circle=$(q.blank==="whole"?"bondWholeCircle":q.blank==="partA"?"bondPartACircle":"bondPartBCircle");
   const square=$(q.blank==="whole"?"bondWholeSquare":q.blank==="partA"?"bondPartASquare":"bondPartBSquare");
   text.textContent=answer;text.classList.add(correct?"correct":"wrong");
-  for(const shape of [circle,square]){shape.classList.remove("missing");shape.classList.add(correct?"correct":"wrong")}
+  for(const shape of [circle,square]){shape.classList.remove("missing","subtraction-missing");shape.classList.add(correct?"correct":"wrong")}
   q.shown[q.blank]=answer;$("bondEquation").textContent=mathEquation(q);
   if(correct)mathScore++;
   [...$("mathChoices").children].forEach(option=>{option.disabled=true;if(Number(option.dataset.answer)===mathQuestions[mathIndex].answer)option.classList.add("correct");else if(option===b)option.classList.add("wrong")});
