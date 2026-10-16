@@ -94,6 +94,17 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bondnumber.wrong{fill:#a51e12}
 .mathprompt{text-align:center;font-size:clamp(28px,5vw,38px);font-weight:700;margin:0 0 8px}
 .equation{font-size:clamp(34px,7vw,58px);font-weight:700;margin:0 0 4px}
+.squaremath{width:100%;display:flex;align-items:center;justify-content:space-around;gap:4px;padding-top:4px}
+.squaregroup{display:flex;flex-direction:column;align-items:center;gap:4px}
+.squarelabel{font-size:clamp(12px,2.5vw,16px);font-weight:700}
+.squaretiles{display:grid;grid-template-columns:repeat(5,clamp(12px,4vw,18px));gap:2px}
+.tile{width:clamp(12px,4vw,18px);aspect-ratio:1;border:2px solid var(--ink);border-radius:3px;background:#84c7f4}
+#tilesPartB .tile{background:#ffc857}
+#tilesWhole .tile{background:#78d99b}
+.tile.missingtile{background:#ffe487!important;border-style:dashed;display:grid;place-items:center;font-size:clamp(12px,3vw,19px);font-weight:700}
+.squaregroup.correct .tile{background:#b6eccb!important;border-color:#16804d}
+.squaregroup.wrong .tile{background:#ffc3b9!important;border-color:#c43d28}
+.squareoperator{font-size:clamp(22px,5vw,34px);font-weight:700}
 .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
 .choices button{min-height:86px;border-radius:24px;background:#fff;font-size:clamp(36px,7vw,54px);font-weight:700;box-shadow:0 6px 0 rgba(31,42,68,.22)}
 .choices button:active{transform:translateY(4px);box-shadow:none}
@@ -145,12 +156,19 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <div class="card bondcard" id="bondCard">
       <p class="mathprompt">Find the missing number</p>
       <svg class="bondsvg" viewBox="0 0 400 300" role="img" aria-label="Number bond diagram">
-        <line class="bondline" x1="200" y1="92" x2="105" y2="205"/><line class="bondline" x1="200" y1="92" x2="295" y2="205"/>
-        <circle id="bondWholeCircle" class="bondnode" cx="200" cy="75" r="57"/><text id="bondWhole" class="bondnumber" x="200" y="75"></text>
+        <line id="bondLineA" class="bondline" x1="200" y1="82" x2="95" y2="220"/><line id="bondLineB" class="bondline" x1="200" y1="82" x2="305" y2="220"/>
+        <circle id="bondWholeCircle" class="bondnode" cx="200" cy="82" r="72"/><text id="bondWhole" class="bondnumber" x="200" y="82"></text>
         <circle id="bondPartACircle" class="bondnode" cx="95" cy="220" r="57"/><text id="bondPartA" class="bondnumber" x="95" y="220"></text>
         <circle id="bondPartBCircle" class="bondnode" cx="305" cy="220" r="57"/><text id="bondPartB" class="bondnumber" x="305" y="220"></text>
       </svg>
       <p class="equation" id="bondEquation"></p>
+      <div class="squaremath" aria-label="Square tile sets">
+        <div class="squaregroup" id="tilesPartA" aria-label="Part A squares"><span class="squarelabel">Part A</span><div class="squaretiles"></div></div>
+        <span class="squareoperator" aria-hidden="true">+</span>
+        <div class="squaregroup" id="tilesPartB" aria-label="Part B squares"><span class="squarelabel">Part B</span><div class="squaretiles"></div></div>
+        <span class="squareoperator" aria-hidden="true">=</span>
+        <div class="squaregroup" id="tilesWhole" aria-label="Whole squares"><span class="squarelabel">Whole</span><div class="squaretiles"></div></div>
+      </div>
     </div>
     <p class="mathfeedback" id="mathFeedback" aria-live="polite"></p>
     <div class="choices" id="mathChoices"></div>
@@ -423,16 +441,37 @@ function makeMathQuestion(bond){
 function startMath(){
   mathQuestions=shuffle(MATH.map(makeMathQuestion)).slice(0,10);mathIndex=0;mathScore=0;show("math");renderMath();
 }
+function renderSquareTiles(q){
+  for(const [id,key] of [["tilesPartA","partA"],["tilesPartB","partB"],["tilesWhole","whole"]]){
+    const group=$(id).querySelector(".squaretiles"),value=q.shown[key],wrap=$(id);
+    wrap.classList.remove("correct","wrong");
+    group.innerHTML=value==="?"?'<span class="tile missingtile">?</span>':Array.from({length:value},()=>'<span class="tile" aria-hidden="true"></span>').join("");
+    wrap.setAttribute("aria-label",`${key==="whole"?"Whole":key==="partA"?"Part A":"Part B"}: ${value==="?"?"missing number":value+" squares"}`);
+  }
+}
 function renderMath(){
   const q=mathQuestions[mathIndex];mathLocked=false;
   $("mathCount").textContent=`${mathIndex+1} of ${mathQuestions.length}`;
+  const layouts=[
+    {whole:[200,82],partA:[95,220],partB:[305,220]},
+    {whole:[200,218],partA:[95,80],partB:[305,80]},
+    {whole:[82,150],partA:[300,95],partB:[300,205]},
+    {whole:[318,150],partA:[100,95],partB:[100,205]}
+  ];
+  const layout=layouts[Math.floor(Math.random()*layouts.length)];
   for(const key of ["whole","partA","partB"]){
     const text=$(key==="whole"?"bondWhole":key==="partA"?"bondPartA":"bondPartB");
     const circle=$(key==="whole"?"bondWholeCircle":key==="partA"?"bondPartACircle":"bondPartBCircle");
+    const [x,y]=layout[key];circle.setAttribute("cx",x);circle.setAttribute("cy",y);text.setAttribute("x",x);text.setAttribute("y",y);
     text.textContent=q.shown[key];text.classList.remove("correct","wrong");
     circle.classList.remove("correct","wrong");circle.classList.toggle("missing",q.blank===key);
   }
+  for(const [id,key] of [["bondLineA","partA"],["bondLineB","partB"]]){
+    const line=$(id);line.setAttribute("x1",layout.whole[0]);line.setAttribute("y1",layout.whole[1]);
+    line.setAttribute("x2",layout[key][0]);line.setAttribute("y2",layout[key][1]);
+  }
   $("bondEquation").textContent=`${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
+  renderSquareTiles(q);
   $("mathFeedback").textContent="";$("mathFeedback").className="mathfeedback";$("mathNext").hidden=true;
   const options=new Set([q.answer]);
   while(options.size<3)options.add(Math.max(0,Math.min(10,q.answer+Math.floor(Math.random()*7)-3)));
@@ -444,6 +483,8 @@ $("mathChoices").addEventListener("click",e=>{
   const answer=Number(b.dataset.answer),correct=answer===mathQuestions[mathIndex].answer;
   const q=mathQuestions[mathIndex],text=$(q.blank==="whole"?"bondWhole":q.blank==="partA"?"bondPartA":"bondPartB"),circle=$(q.blank==="whole"?"bondWholeCircle":q.blank==="partA"?"bondPartACircle":"bondPartBCircle");
   text.textContent=answer;text.classList.add(correct?"correct":"wrong");circle.classList.remove("missing");circle.classList.add(correct?"correct":"wrong");
+  q.shown[q.blank]=answer;$("bondEquation").textContent=`${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
+  renderSquareTiles(q);$(q.blank==="whole"?"tilesWhole":q.blank==="partA"?"tilesPartA":"tilesPartB").classList.add(correct?"correct":"wrong");
   if(correct)mathScore++;
   [...$("mathChoices").children].forEach(option=>{option.disabled=true;if(Number(option.dataset.answer)===mathQuestions[mathIndex].answer)option.classList.add("correct");else if(option===b)option.classList.add("wrong")});
   $("mathFeedback").classList.add(correct?"correct":"wrong");
