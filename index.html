@@ -51,7 +51,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .actions .rec{background:var(--again)}
 .actions .rec.live{background:var(--ink)}
 .actions .nav{background:rgba(255,255,255,.8);color:var(--ink);box-shadow:0 7px 0 rgba(31,42,68,.25)}
-.actions .nav:disabled{opacity:.45;cursor:default}
+.actions #prev:disabled{opacity:.45;cursor:default}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .back{background:rgba(255,255,255,.75);border-radius:22px;padding:12px 26px;min-height:60px;font-size:26px}
 .dots{display:flex;gap:6px}
@@ -133,8 +133,8 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
       <button class="speak" id="speak" aria-label="Hear the word"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
     </div>
     <div class="actions">
-      <button class="nav" id="prev">Previous</button>
-      <button class="nav" id="nextWord">Next</button>
+      <button class="again" id="prev">Previous</button>
+      <button class="know" id="nextWord">Next</button>
     </div>
   </section>
 
