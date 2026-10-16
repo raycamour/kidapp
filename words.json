@@ -30,5 +30,32 @@
       "deep", "different", "does", "dog", "door", "earth", "edge", "end", "enough", "even",
       "ever", "example", "family", "father", "field", "fire", "follow", "friend", "front", "great"
     ]
+  },
+  {
+    "id": "intermediate",
+    "name": "Intermediate",
+    "words": [
+      "acorn", "airport", "artist", "autumn", "basket", "beach", "bedtime", "blanket", "blossom", "breakfast",
+      "butterfly", "candle", "captain", "careful", "castle", "cheerful", "chicken", "circle", "classroom", "cloudy",
+      "collect", "comfort", "costume", "cousin", "crunchy", "dentist", "discover", "dragon", "dream", "early",
+      "energy", "enjoy", "escape", "explore", "favorite", "feather", "finish", "garden", "gentle", "giggle",
+      "glitter", "golden", "grandfather", "grandmother", "grocery", "hallway", "healthy", "helper", "holiday", "insect",
+      "invite", "jacket", "journey", "kitchen", "ladder", "library", "lovely", "message", "mitten", "neighbor",
+      "noisy", "noodle", "ocean", "package", "parade", "pencil", "picnic", "planet", "pocket", "popcorn",
+      "problem", "pumpkin", "quiet", "rainbow", "remember", "rocket", "sandwich", "season", "shadow", "shiny",
+      "shoulder", "squirrel", "summer", "thunder", "ticket", "tiny", "tomorrow", "travel", "tunnel", "uncle",
+      "visit", "weather", "weekend", "whisper", "window", "winter", "wonderful", "crayon", "dinner", "zipper"
+    ]
+  },
+  {
+    "id": "hard",
+    "name": "Hard",
+    "words": [
+      "absolutely", "achievement", "activity", "addition", "amazing", "ancient", "announce", "anxious", "apologize", "appearance",
+      "appreciate", "attention", "audience", "bicycle", "breathe", "calendar", "celebrate", "certain", "character", "community",
+      "compare", "competition", "concentrate", "consequence", "conversation", "courageous", "curious", "delicious", "description", "disappointed",
+      "education", "electricity", "emergency", "especially", "excellent", "experiment", "familiar", "imagination", "important", "independent",
+      "information", "invention", "knowledge", "language", "magnificent", "measurement", "mysterious", "necessary", "opportunity", "organization"
+    ]
   }
 ]
