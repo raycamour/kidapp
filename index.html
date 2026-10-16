@@ -42,8 +42,6 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 #gateNo{background:rgba(31,42,68,.65)}
 #gateMsg{margin:14px 0 0!important;min-height:34px;color:var(--again)}
 
-.voicepick{text-align:center;font-size:22px;margin-top:8px}
-.voicepick select{font:inherit;font-size:22px;padding:10px 14px;border-radius:14px;border:0;max-width:100%}
 .reccount{font-size:24px}
 .tabs{display:flex;gap:12px;margin-bottom:16px}
 .tab{flex:1;min-height:60px;border-radius:20px;background:rgba(255,255,255,.55);font-size:26px}
@@ -115,7 +113,6 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <h1>Word cards</h1>
     <p class="sub">Pick something to practice</p>
     <div id="list"></div>
-    <div class="voicepick"><label>Voice <select id="voiceSel"></select></label></div>
     <div class="footer"><button class="micbtn" id="recOpen" aria-label="Parents: record voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button><button class="link" id="reset">Start over</button></div>
   </section>
 
@@ -199,7 +196,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 </div>
 
 <script>
-let DECKS=[],SENTS=[];
+let DECKS=[],SENTS=[],MATH=[];
 const SAY={a:"uh"};
 const KEY="wordcards-learned-v1";
 const SIZE=20;
@@ -234,11 +231,9 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function pop(id){const c=$(id);c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop")}
 
 let voice=null,utter=null;
-const VKEY="wordcards-voice";
 const englishVoices=()=>{try{return speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.replace("_","-").startsWith("en"))}catch(e){return[]}};
 function pickVoice(){
   const v=englishVoices();
-  try{const saved=localStorage.getItem(VKEY),m=saved&&v.find(x=>x.name===saved);if(m){voice=m;return}}catch(e){}
   const female=/samantha|ava|allison|susan|zoe|nicky|joelle|karen|moira|tessa|serena|kate|female/i;
   const male=/alex|fred|tom|aaron|evan|nathan|daniel|oliver|arthur|gordon|rishi/i;
   const us=x=>x.lang.replace("_","-")==="en-US";
@@ -252,7 +247,7 @@ function pickVoice(){
      ||v.find(x=>us(x)&&!male.test(x.name))
      ||v.find(x=>us(x))||v[0]||null;
 }
-try{speechSynthesis.onvoiceschanged=()=>{pickVoice();fillVoices()};pickVoice()}catch(e){}
+try{speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}catch(e){}
 function say(w){
   try{player.pause()}catch(e){}
   if(clips.has(w)){
@@ -274,20 +269,12 @@ function say(w){
 // iPad only allows speech after a touch, so "wake" it on the first one
 document.addEventListener("touchend",()=>{try{speechSynthesis.speak(new SpeechSynthesisUtterance(""))}catch(e){}},{once:true});
 
-function fillVoices(){
-  const sel=$("voiceSel");if(!sel)return;
-  let saved="";try{saved=localStorage.getItem(VKEY)||""}catch(e){}
-  sel.innerHTML='<option value="">Automatic</option>'+englishVoices().map(x=>`<option value="${x.name}">${x.name}</option>`).join("");
-  sel.value=saved;
-}
-
 function home(){
-  fillVoices();
   const all=allWords(),k=known(),n=all.filter(w=>k.has(w)).length,pct=all.length?Math.round(100*n/all.length):0;
   $("list").innerHTML=
     `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
     (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b><span style="margin-bottom:0">Read and hear a sentence</span></button>`:"")+
-    `<button class="deck" data-act="math"><b>Number bonds</b><span style="margin-bottom:0">Make a whole with two parts</span></button>`;
+    (MATH.length?`<button class="deck" data-act="math"><b>Number bonds</b><span style="margin-bottom:0">Make a whole with two parts</span></button>`:"");
   show("home");
 }
 function start(){
@@ -397,10 +384,6 @@ $("back2").addEventListener("click",home);
 $("mathBack").addEventListener("click",home);
 $("mathHome").addEventListener("click",home);
 $("home2").addEventListener("click",home);
-$("voiceSel").addEventListener("change",e=>{
-  try{e.target.value?localStorage.setItem(VKEY,e.target.value):localStorage.removeItem(VKEY)}catch(_){}
-  pickVoice();say("hello");
-});
 let gateAns=0;
 function openGate(msg){
   const a=6+Math.floor(Math.random()*4),b=6+Math.floor(Math.random()*4);
@@ -430,15 +413,15 @@ $("back3").addEventListener("click",leaveRec);
 $("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={all:[]};save();home()}});
 
 let mathQuestions=[],mathIndex=0,mathScore=0,mathLocked=false;
-function makeMathQuestion(){
-  const whole=2+Math.floor(Math.random()*9),partA=1+Math.floor(Math.random()*(whole-1)),partB=whole-partA;
+function makeMathQuestion(bond){
+  const {whole,partA,partB}=bond;
   const blank=["whole","partA","partB"][Math.floor(Math.random()*3)];
   const answer=blank==="whole"?whole:blank==="partA"?partA:partB;
   const shown={whole,partA,partB};shown[blank]="?";
   return{whole,partA,partB,blank,answer,shown};
 }
 function startMath(){
-  mathQuestions=shuffle(Array.from({length:10},makeMathQuestion));mathIndex=0;mathScore=0;show("math");renderMath();
+  mathQuestions=shuffle(MATH.map(makeMathQuestion)).slice(0,10);mathIndex=0;mathScore=0;show("math");renderMath();
 }
 function renderMath(){
   const q=mathQuestions[mathIndex];mathLocked=false;
@@ -477,7 +460,8 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}ca
 const load=f=>fetch(f,{cache:"no-cache"}).then(r=>{if(!r.ok)throw new Error(f);return r.json()});
 load("words.json")
   .then(d=>{DECKS=d;return load("sentences.json").catch(()=>[])})
-  .then(s=>{SENTS=s;home()})
+  .then(s=>{SENTS=s;return load("numberBonds.json").catch(()=>[])})
+  .then(b=>{MATH=b;home()})
   .catch(()=>{$("list").innerHTML='<p class="sub">Could not load the word lists.</p>';show("home")});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>

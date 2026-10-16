@@ -1,5 +1,5 @@
-const CACHE = "kidapp-v6";
-const FILES = ["./", "index.html", "manifest.json", "words.json", "sentences.json", "icon-180.png"];
+const CACHE = "kidapp-v7";
+const FILES = ["./", "index.html", "manifest.json", "words.json", "sentences.json", "numberBonds.json", "icon-180.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
