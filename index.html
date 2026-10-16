@@ -77,10 +77,29 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .know,.big{background:var(--go)}
 
 #done{align-items:center;justify-content:center;text-align:center}
+#mathDone{align-items:center;justify-content:center;text-align:center}
+#mathDone h2{font-size:clamp(52px,10vw,84px);margin:16px 0 8px}
+#mathDone p{font-size:clamp(26px,4.5vw,36px);margin:0 0 48px}
 .stars{font-size:clamp(80px,16vw,140px);line-height:1;letter-spacing:.1em}
 #done h2{font-size:clamp(52px,10vw,84px);margin:16px 0 8px}
 #done p{font-size:clamp(26px,4.5vw,36px);margin:0 0 48px}
 .big{padding:0 56px}
+.bondcard{flex-direction:column;gap:4px;padding:18px 8%}
+.bondsvg{width:min(100%,520px);max-height:48vh;overflow:visible}
+.bondline{stroke:var(--ink);stroke-width:7;stroke-linecap:round}
+.bondnode{fill:#fff;stroke:var(--ink);stroke-width:6}
+.bondnode.missing{fill:#ffe487}
+.bondnumber{fill:var(--ink);font-size:54px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+.equation{font-size:clamp(34px,7vw,58px);font-weight:700;margin:0 0 4px}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+.choices button{min-height:86px;border-radius:24px;background:#fff;font-size:clamp(36px,7vw,54px);font-weight:700;box-shadow:0 6px 0 rgba(31,42,68,.22)}
+.choices button:active{transform:translateY(4px);box-shadow:none}
+.choices button:disabled{opacity:.8}
+.choices button.correct{background:#b6eccb}
+.choices button.wrong{background:#ffc3b9}
+.mathfeedback{height:36px;text-align:center;font-size:26px;font-weight:700;margin:8px 0 0}
+.mathnext{min-height:82px!important}
+@media(max-height:700px){.bondsvg{max-height:40vh}.choices button{min-height:70px}}
 </style>
 </head>
 <body>
@@ -115,6 +134,27 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
       <button class="speak" id="speak2" aria-label="Hear the sentence"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
     </div>
     <div class="actions one"><button class="know" id="next">Next sentence</button></div>
+  </section>
+
+  <section class="screen" id="math">
+    <div class="top"><button class="back" id="mathBack">Home</button><div class="reccount" id="mathCount"></div></div>
+    <div class="card bondcard" id="bondCard">
+      <svg class="bondsvg" viewBox="0 0 400 300" role="img" aria-label="Number bond diagram">
+        <line class="bondline" x1="200" y1="92" x2="105" y2="205"/><line class="bondline" x1="200" y1="92" x2="295" y2="205"/>
+        <circle id="bondWholeCircle" class="bondnode" cx="200" cy="75" r="57"/><text id="bondWhole" class="bondnumber" x="200" y="75"></text>
+        <circle id="bondPartACircle" class="bondnode" cx="95" cy="220" r="57"/><text id="bondPartA" class="bondnumber" x="95" y="220"></text>
+        <circle id="bondPartBCircle" class="bondnode" cx="305" cy="220" r="57"/><text id="bondPartB" class="bondnumber" x="305" y="220"></text>
+      </svg>
+      <p class="equation" id="bondEquation"></p>
+    </div>
+    <p class="mathfeedback" id="mathFeedback" aria-live="polite"></p>
+    <div class="choices" id="mathChoices"></div>
+    <div class="actions one"><button class="know mathnext" id="mathNext" hidden>Next</button></div>
+  </section>
+
+  <section class="screen" id="mathDone">
+    <div class="stars">★★★</div><h2>Math time!</h2><p id="mathDoneText"></p>
+    <button class="big" id="mathHome">Back home</button>
   </section>
 
   <section class="screen" id="rec">
@@ -238,7 +278,8 @@ function home(){
   const all=allWords(),k=known(),n=all.filter(w=>k.has(w)).length,pct=all.length?Math.round(100*n/all.length):0;
   $("list").innerHTML=
     `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
-    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b><span style="margin-bottom:0">Read and hear a sentence</span></button>`:"");
+    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b><span style="margin-bottom:0">Read and hear a sentence</span></button>`:"")+
+    `<button class="deck" data-act="math"><b>Number bonds</b><span style="margin-bottom:0">Make a whole with two parts</span></button>`;
   show("home");
 }
 function start(){
@@ -336,7 +377,7 @@ function startSent(){sq=[];show("sent");nextSent()}
 
 $("list").addEventListener("click",e=>{
   const b=e.target.closest(".deck");if(!b)return;
-  if(b.dataset.act==="sent")startSent();else start();
+  if(b.dataset.act==="sent")startSent();else if(b.dataset.act==="math")startMath();else start();
 });
 $("speak").addEventListener("click",()=>say(queue[0]));
 $("speak2").addEventListener("click",()=>say(cur));
@@ -345,6 +386,8 @@ $("again").addEventListener("click",again);
 $("next").addEventListener("click",nextSent);
 $("back").addEventListener("click",home);
 $("back2").addEventListener("click",home);
+$("mathBack").addEventListener("click",home);
+$("mathHome").addEventListener("click",home);
 $("home2").addEventListener("click",home);
 $("voiceSel").addEventListener("change",e=>{
   try{e.target.value?localStorage.setItem(VKEY,e.target.value):localStorage.removeItem(VKEY)}catch(_){}
@@ -377,6 +420,45 @@ $("recNext").addEventListener("click",()=>stepRec(1));
 $("speak3").addEventListener("click",()=>say(ritems[ri]));
 $("back3").addEventListener("click",leaveRec);
 $("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={all:[]};save();home()}});
+
+let mathQuestions=[],mathIndex=0,mathScore=0,mathLocked=false;
+function makeMathQuestion(){
+  const whole=2+Math.floor(Math.random()*9),partA=1+Math.floor(Math.random()*(whole-1)),partB=whole-partA;
+  const blank=["whole","partA","partB"][Math.floor(Math.random()*3)];
+  const answer=blank==="whole"?whole:blank==="partA"?partA:partB;
+  const shown={whole,partA,partB};shown[blank]="?";
+  return{whole,partA,partB,blank,answer,shown};
+}
+function startMath(){
+  mathQuestions=shuffle(Array.from({length:10},makeMathQuestion));mathIndex=0;mathScore=0;show("math");renderMath();
+}
+function renderMath(){
+  const q=mathQuestions[mathIndex];mathLocked=false;
+  $("mathCount").textContent=`${mathIndex+1} of ${mathQuestions.length}`;
+  for(const key of ["whole","partA","partB"]){
+    const text=$(key==="whole"?"bondWhole":key==="partA"?"bondPartA":"bondPartB");
+    const circle=$(key==="whole"?"bondWholeCircle":key==="partA"?"bondPartACircle":"bondPartBCircle");
+    text.textContent=q.shown[key];circle.classList.toggle("missing",q.blank===key);
+  }
+  $("bondEquation").textContent=`${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
+  $("mathFeedback").textContent="";$("mathNext").hidden=true;
+  const options=new Set([q.answer]);
+  while(options.size<3)options.add(Math.max(0,Math.min(10,q.answer+Math.floor(Math.random()*7)-3)));
+  $("mathChoices").innerHTML=shuffle([...options]).map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("");
+  pop("bondCard");
+}
+$("mathChoices").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b||mathLocked)return;mathLocked=true;
+  const answer=Number(b.dataset.answer),correct=answer===mathQuestions[mathIndex].answer;
+  if(correct)mathScore++;
+  [...$("mathChoices").children].forEach(option=>{option.disabled=true;if(Number(option.dataset.answer)===mathQuestions[mathIndex].answer)option.classList.add("correct");else if(option===b)option.classList.add("wrong")});
+  $("mathFeedback").textContent=correct?"That’s right!":"The answer is "+mathQuestions[mathIndex].answer;
+  $("mathNext").textContent=mathIndex+1===mathQuestions.length?"See my stars":"Next";$("mathNext").hidden=false;
+});
+$("mathNext").addEventListener("click",()=>{
+  if(++mathIndex<mathQuestions.length)renderMath();
+  else{$("mathDoneText").textContent=`You got ${mathScore} out of ${mathQuestions.length} number bonds.`;show("mathDone")}
+});
 
 loadClips();
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
