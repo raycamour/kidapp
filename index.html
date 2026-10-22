@@ -451,10 +451,9 @@ function makeMathQuestion(bond){
   return{whole,partA,partB,blank,answer,shown,operation};
 }
 function makeThreeMathQuestion(bond){
-  const {whole,partA,partB,partC}=bond,keys=["partA","partB","partC"];
+  const {whole,partA,partB,partC}=bond;
   const shown={whole,partA,partB,partC};
-  const knownKey=keys[Math.floor(Math.random()*keys.length)];
-  const blankKeys=keys.filter(key=>key!==knownKey);
+  const blankKeys=["partB","partC"];
   blankKeys.forEach(key=>shown[key]="?");
   return{kind:"three",whole,partA,partB,partC,shown,blankKeys,answers:{partA,partB,partC},selected:{}};
 }
@@ -513,8 +512,9 @@ function renderMath(){
   if(isThree){
     $("mathChoices").classList.add("multi");
     $("mathChoices").innerHTML=q.blankKeys.map((key,i)=>{
-      const options=mathNumberOptions(q.answers[key],20,1);
-      return `<div class="choice-group" data-slot="${key}"><div class="choice-title">Missing number ${i+1}</div><div class="choice-row">${options.map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("")}</div></div>`;
+      const options=mathNumberOptions(q.answers[key],i===0?9:10,i===0?1:0);
+      const title=i===0?"Make 10":"How many left?";
+      return `<div class="choice-group" data-slot="${key}"><div class="choice-title">${title}</div><div class="choice-row">${options.map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("")}</div></div>`;
     }).join("");
   }else{
     $("mathChoices").classList.remove("multi");
