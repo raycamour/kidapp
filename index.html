@@ -181,6 +181,10 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   .footer .micbtn{width:44px;height:44px}
   .footer .link{font-size:16px;padding:8px 4px}
 }
+@media(max-width:360px){
+  .footer .micbtn{width:48px;height:48px}
+  .footer .link{font-size:16px;padding:10px 3px}
+}
 </style>
 </head>
 <body>
@@ -189,7 +193,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <h1>Learning is fun</h1>
     <p class="sub">Pick something to practice</p>
     <div id="list"></div>
-    <div class="footer"><button class="micbtn" id="recOpen" aria-label="Parents: record voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button><button class="link install-link" id="installApp">Install app</button></div>
+    <div class="footer"><button class="micbtn" id="recOpen" aria-label="Parents: record voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button><button class="link install-link" id="refreshApp">Refresh app</button><button class="link install-link" id="installApp">Install app</button></div>
   </section>
 
   <section class="screen" id="play">
@@ -434,6 +438,23 @@ async function installApp(){
   try{await prompt.prompt();await prompt.userChoice}catch(e){}
   home();
 }
+function waitForWorker(worker){
+  if(!worker||worker.state==="activated"||worker.state==="redundant")return Promise.resolve();
+  return new Promise(resolve=>{
+    const timer=setTimeout(resolve,5000);
+    worker.addEventListener("statechange",()=>{
+      if(worker.state==="activated"||worker.state==="redundant"){clearTimeout(timer);resolve()}
+    });
+  });
+}
+async function refreshApp(){
+  const button=$("refreshApp");button.disabled=true;button.textContent="Refreshing…";
+  try{
+    const registration="serviceWorker" in navigator?await navigator.serviceWorker.getRegistration():null;
+    if(registration){await registration.update();if(registration.installing)await waitForWorker(registration.installing)}
+  }catch(e){}
+  window.location.reload();
+}
 function start(){
   const words=allWords(),k=known(),learnedCount=words.filter(w=>k.has(w)).length;
   const pool=shuffle(words.filter(w=>!k.has(w)));
@@ -677,6 +698,7 @@ $("list").addEventListener("click",e=>{
   if(b.dataset.act==="sent")startSent();else if(b.dataset.act==="scramble")startScramble();else if(b.dataset.act==="math")startMath();else start();
 });
 $("installApp").addEventListener("click",installApp);
+$("refreshApp").addEventListener("click",refreshApp);
 $("installClose").addEventListener("click",()=>$("installHelp").classList.remove("on"));
 $("installHelp").addEventListener("click",e=>{if(e.target.id==="installHelp")$("installHelp").classList.remove("on")});
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e});
