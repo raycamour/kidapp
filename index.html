@@ -195,8 +195,9 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   <section class="screen" id="play">
     <div class="top">
       <button class="back" id="back">Home</button>
-      <div class="dots" id="dots"></div>
+      <div class="reccount" id="wordCount"></div>
     </div>
+    <div class="activity-progress"><i class="bar"><u id="wordProgress" style="width:0%"></u></i></div>
     <div class="card" id="card">
       <div class="word" id="word"></div>
       <button class="speak" id="speak" aria-label="Hear the word"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
@@ -340,7 +341,7 @@ const allWords=()=>[...new Set(DECKS.flatMap(d=>d.words))];
 const readableSentences=()=>[...new Set(SENTS)];
 const buildableSentences=()=>[...new Set(SENTS.filter(sentence=>sentence.trim().split(/\s+/).length<=6))];
 const availableMathBonds=()=>new Set(MATH.map(item=>JSON.stringify(item))).size+new Set(MATH3.map(item=>JSON.stringify(item))).size;
-let queue=[],total=0,cardIndex=0,cur="",sq=[];
+let queue=[],total=0,cardIndex=0,wordBlock=1,wordBlockOffset=0,wordBlockSize=20,cur="",sq=[];
 const clips=new Map(),player=new Audio();
 const req=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
 let dbp=null;
@@ -434,17 +435,22 @@ async function installApp(){
   home();
 }
 function start(){
-  const k=known();
-  let pool=allWords().filter(w=>!k.has(w));
-  if(!pool.length)pool=allWords();
-  queue=shuffle(pool).slice(0,SIZE);
+  const words=allWords(),k=known(),learnedCount=words.filter(w=>k.has(w)).length;
+  const pool=shuffle(words.filter(w=>!k.has(w)));
+  if(!pool.length){finishBlock("words",`You learned all ${words.length} words!`,true);return}
+  wordBlock=Math.floor(learnedCount/SIZE)+1;
+  wordBlockOffset=learnedCount%SIZE;
+  wordBlockSize=Math.min(SIZE,words.length-(wordBlock-1)*SIZE);
+  const untilBlockEnd=wordBlockSize-wordBlockOffset;
+  queue=pool.slice(0,Math.min(untilBlockEnd,pool.length));
   total=queue.length;
   cardIndex=0;
   show("play");render();
 }
 function render(){
   $("word").textContent=queue[cardIndex];fitWord($("word"));
-  $("dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<=cardIndex?"on":""}"></i>`).join("");
+  $("wordCount").textContent=`Block ${wordBlock} · Word ${wordBlockOffset+cardIndex+1} of ${wordBlockSize}`;
+  $("wordProgress").style.width=`${Math.round(100*(wordBlockOffset+cardIndex)/wordBlockSize)}%`;
   $("prev").disabled=cardIndex===0;
   pop("card");
 }
@@ -454,10 +460,18 @@ function fitWord(el){
   while(el.scrollWidth>el.clientWidth&&size>34){size=Math.max(34,size-2);el.style.fontSize=size+"px"}
 }
 function previousWord(){if(cardIndex>0){cardIndex--;render()}}
-function advanceWord(){if(cardIndex<queue.length-1){cardIndex++;render()}else finish()}
+function advanceWord(){
+  const word=queue[cardIndex];
+  if(!learned.all.includes(word)){learned.all.push(word);save()}
+  if(cardIndex<queue.length-1){cardIndex++;render()}
+  else{
+    $("wordProgress").style.width="100%";
+    const all=allWords(),complete=all.every(item=>learned.all.includes(item));
+    finishBlock("words",complete?`You learned all ${all.length} words!`:`You practiced ${total} words in this block.`,complete);
+  }
+}
 function finish(){
-  $("doneText").textContent=`You practiced ${total} words today.`;
-  show("done");
+  finishBlock("words",`You practiced ${total} words in this block.`);
 }
 let rt="words",ri=0,ritems=[],recording=false,mr=null,stream=null,chunks=[],stopP=null,stopCb=null,autoplay=true,dirty=false;
 function showRec(){
@@ -533,10 +547,12 @@ function showSent(){
   pop("card2");
 }
 let completedActivity="";
-function finishBlock(key,message){
+function finishBlock(key,message,allDone=false){
   completedActivity=key;
-  $("blockDoneTitle").textContent="Block complete!";
+  $("blockDoneTitle").textContent=allDone?"All done!":"Block complete!";
   $("blockDoneText").textContent=message;
+  $("blockNext").hidden=allDone;
+  $("blockNext").textContent="Next block";
   show("blockDone");
 }
 function nextSent(){
@@ -675,7 +691,8 @@ $("back2").addEventListener("click",home);
 $("mathBack").addEventListener("click",home);
 $("blockHome").addEventListener("click",home);
 $("blockNext").addEventListener("click",()=>{
-  if(completedActivity==="reading")startSent();
+  if(completedActivity==="words")start();
+  else if(completedActivity==="reading")startSent();
   else if(completedActivity==="building")startScramble();
   else if(completedActivity==="math")startMath();
   else home();
