@@ -438,7 +438,7 @@ function renderScrambleWords(){
     const tile=document.createElement("button");tile.type="button";tile.className="answer-slot"+(token?" filled":"");tile.dataset.origin="slot";tile.dataset.index=index;
     const tileFont=Math.min(40,Math.max(25,window.innerWidth*.054));
     const expectedLength=scrambleTokens[index].word.length;
-    tile.style.width=`${Math.max(78,Math.min(250,expectedLength*tileFont*.55+36))}px`;
+    tile.style.width=`${Math.max(78,Math.min(250,expectedLength*tileFont*.55+46))}px`;
     tile.setAttribute("aria-label",token?`Sentence tile ${index+1}: ${token.word}`:`Empty sentence tile ${index+1}`);
     tile.textContent=token?token.word:"";slots.appendChild(tile);
   });
@@ -448,8 +448,7 @@ function renderScrambleWords(){
   });
 }
 function nextScrambleSentence(){
-  if(!SENTS.length)return;
-  if(!scrambleQueue.length){scrambleQueue=shuffle(SENTS.slice());if(scrambleQueue.length>1&&scrambleQueue[scrambleQueue.length-1]===scrambleTarget)scrambleQueue.unshift(scrambleQueue.pop())}
+  if(!scrambleQueue.length){scrambleQueue=shuffle(SENTS.filter(sentence=>sentence.trim().split(/\s+/).length<=6));if(!scrambleQueue.length)return;if(scrambleQueue.length>1&&scrambleQueue[scrambleQueue.length-1]===scrambleTarget)scrambleQueue.unshift(scrambleQueue.pop())}
   scrambleTarget=scrambleQueue.pop();scrambleTokens=scrambleTarget.trim().split(/\s+/).map((word,id)=>({word,id}));
   scrambleBank=shuffle(scrambleTokens.slice());scrambleSlots=Array(scrambleTokens.length).fill(null);
   if(scrambleTokens.length>1&&scrambleBank.every((token,index)=>token.id===index))scrambleBank.push(scrambleBank.shift());
@@ -459,7 +458,7 @@ function nextScrambleSentence(){
   $("checkScramble").hidden=false;$("nextScramble").hidden=true;
   renderScrambleWords();
 }
-function startScramble(){scrambleQueue=[];scrambleIndex=0;show("buildSent");nextScrambleSentence()}
+function startScramble(){scrambleQueue=[];scrambleIndex=0;scrambleTarget="";show("buildSent");nextScrambleSentence();if(!scrambleTarget){$("scrambleFeedback").textContent="No short sentences are available yet."}}
 function checkScrambleSentence(){
   const correct=scrambleSlots.length===scrambleTokens.length&&scrambleSlots.every((token,index)=>token&&token.id===index);
   const feedback=$("scrambleFeedback");
