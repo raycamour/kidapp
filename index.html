@@ -839,7 +839,7 @@ function renderMath(){
     }).join("");
   }else{
     $("mathChoices").classList.remove("multi");
-    const options=mathNumberOptions(q.answer,10,0);
+    const options=mathNumberOptions(q.answer,20,0);
     $("mathChoices").innerHTML=options.map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("");
   }
   pop("bondCard");
