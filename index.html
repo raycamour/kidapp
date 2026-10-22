@@ -86,7 +86,10 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .big{padding:0 56px}
 .bondcard{flex-direction:column;justify-content:flex-start;gap:4px;padding:12px 6%;overflow-y:auto;background-image:none;background-color:#e8eef8}
 .bondsvg{width:min(100%,460px);max-height:36vh;flex:0 0 auto;overflow:visible}
+.bondsvg.three-on{max-height:28vh}
 .bondline{stroke:var(--ink);stroke-width:7;stroke-linecap:round}
+.three-bond,.three-part-node{display:none}
+.bondsvg.three-on .three-bond,.bondsvg.three-on .three-part-node{display:inline}
 .bondnode{fill:#fff;stroke:var(--ink);stroke-width:6}
 .bondnode-square{display:none}
 .bondsvg.square-on .bondnode-circle{display:none}
@@ -101,7 +104,11 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .bondnumber.wrong{fill:#a51e12}
 .equation{font-size:clamp(58px,16vmin,84px);font-weight:700;margin:auto 0 0;padding:8px 0;flex:0 0 auto;text-align:center;max-width:100%}
 .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+.choices.multi{display:flex;flex-direction:column;gap:8px}
+.choice-title{font-size:clamp(20px,3.4vw,26px);font-weight:700;text-align:center;margin:0 0 4px}
+.choice-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .choices button{min-height:86px;border-radius:24px;background:#fff;font-size:clamp(36px,7vw,54px);font-weight:700;box-shadow:0 6px 0 rgba(31,42,68,.22)}
+.choices.multi button{min-height:62px;border-radius:18px}
 .choices button:active{transform:translateY(4px);box-shadow:none}
 .choices button:disabled{opacity:.8}
 .choices button.correct{background:#b6eccb}
@@ -112,6 +119,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .mathnext{min-height:82px!important}
 @media(max-height:700px){
   .bondsvg{max-height:30vh}
+  .bondsvg.three-on{max-height:23vh}
   .bondcard{padding:8px 4%;gap:2px}
   .choices button{min-height:66px}
 }
@@ -154,10 +162,11 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <div class="top"><button class="back" id="mathBack">Home</button><div class="reccount" id="mathCount"></div></div>
     <div class="card bondcard" id="bondCard">
       <svg class="bondsvg" id="bondSvg" viewBox="0 0 400 300" role="img" aria-label="Number bond diagram">
-        <line id="bondLineA" class="bondline" x1="200" y1="82" x2="95" y2="220"/><line id="bondLineB" class="bondline" x1="200" y1="82" x2="305" y2="220"/>
+        <line id="bondLineA" class="bondline" x1="200" y1="82" x2="95" y2="220"/><line id="bondLineB" class="bondline" x1="200" y1="82" x2="305" y2="220"/><line id="bondLineC" class="bondline three-bond" x1="200" y1="82" x2="200" y2="220"/>
         <circle id="bondWholeCircle" class="bondnode bondnode-circle" cx="200" cy="82" r="72"/><rect id="bondWholeSquare" class="bondnode bondnode-square" x="128" y="10" width="144" height="144" rx="14"/><text id="bondWhole" class="bondnumber bondnumber-whole" x="200" y="82"></text>
         <circle id="bondPartACircle" class="bondnode bondnode-circle" cx="95" cy="220" r="57"/><rect id="bondPartASquare" class="bondnode bondnode-square" x="38" y="163" width="114" height="114" rx="14"/><text id="bondPartA" class="bondnumber" x="95" y="220"></text>
         <circle id="bondPartBCircle" class="bondnode bondnode-circle" cx="305" cy="220" r="57"/><rect id="bondPartBSquare" class="bondnode bondnode-square" x="248" y="163" width="114" height="114" rx="14"/><text id="bondPartB" class="bondnumber" x="305" y="220"></text>
+        <g class="three-part-node"><circle id="bondPartCCircle" class="bondnode bondnode-circle" cx="200" cy="220" r="57"/><rect id="bondPartCSquare" class="bondnode bondnode-square" x="143" y="163" width="114" height="114" rx="14"/><text id="bondPartC" class="bondnumber" x="200" y="220"></text></g>
       </svg>
       <p class="equation" id="bondEquation"></p>
     </div>
@@ -205,7 +214,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 </div>
 
 <script>
-let DECKS=[],SENTS=[],MATH=[];
+let DECKS=[],SENTS=[],MATH=[],MATH3=[];
 const SAY={a:"uh"};
 const KEY="wordcards-learned-v1";
 const SIZE=20;
@@ -289,7 +298,7 @@ function home(){
   $("list").innerHTML=
     `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
     (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b><span style="margin-bottom:0">Read and hear a sentence</span></button>`:"")+
-    (MATH.length?`<button class="deck" data-act="math"><b>Number bonds</b><span style="margin-bottom:0">Make a whole with two parts</span></button>`:"");
+    (MATH.length||MATH3.length?`<button class="deck" data-act="math"><b>Number bonds</b><span style="margin-bottom:0">Build totals with two or three parts</span></button>`:"");
   show("home");
 }
 function start(){
@@ -441,30 +450,46 @@ function makeMathQuestion(bond){
   const operation=Math.random()<0.5?"+":"-";
   return{whole,partA,partB,blank,answer,shown,operation};
 }
+function makeThreeMathQuestion(bond){
+  const {whole,partA,partB,partC}=bond,keys=["partA","partB","partC"];
+  const shown={whole,partA,partB,partC};
+  const knownKey=keys[Math.floor(Math.random()*keys.length)];
+  const blankKeys=keys.filter(key=>key!==knownKey);
+  blankKeys.forEach(key=>shown[key]="?");
+  return{kind:"three",whole,partA,partB,partC,shown,blankKeys,answers:{partA,partB,partC},selected:{}};
+}
 function mathEquation(q){
+  if(q.kind==="three")return `${q.shown.partA} + ${q.shown.partB} + ${q.shown.partC} = ${q.shown.whole}`;
   if(q.operation==="+")return `${q.shown.partA} + ${q.shown.partB} = ${q.shown.whole}`;
   if(q.blank==="whole")return `? - ${q.shown.partA} = ${q.shown.partB}`;
   if(q.blank==="partA")return `${q.shown.whole} - ? = ${q.shown.partB}`;
   return `${q.shown.whole} - ${q.shown.partA} = ?`;
 }
 function startMath(){
-  mathQuestions=shuffle(MATH.map(makeMathQuestion)).slice(0,10);mathIndex=0;mathScore=0;show("math");renderMath();
+  const twoPart=shuffle(MATH.map(makeMathQuestion)).slice(0,5);
+  const threePart=shuffle(MATH3.map(makeThreeMathQuestion)).slice(0,5);
+  mathQuestions=shuffle([...twoPart,...threePart]);mathIndex=0;mathScore=0;show("math");renderMath();
 }
 function renderMath(){
   const q=mathQuestions[mathIndex];mathLocked=false;
+  const isThree=q.kind==="three";
   $("mathCount").textContent=`${mathIndex+1} of ${mathQuestions.length}`;
   $("bondSvg").classList.toggle("square-on",Math.random()<0.5);
-  const layouts=[
+  $("bondSvg").classList.toggle("three-on",isThree);
+  const layouts=isThree?[
+    {whole:[200,82],partA:[65,230],partB:[200,230],partC:[335,230]},
+    {whole:[200,218],partA:[65,70],partB:[200,70],partC:[335,70]}
+  ]:[
     {whole:[200,82],partA:[95,220],partB:[305,220]},
     {whole:[200,225],partA:[80,65],partB:[320,65]},
     {whole:[82,150],partA:[300,80],partB:[300,220]},
     {whole:[318,150],partA:[100,80],partB:[100,220]}
   ];
   const layout=layouts[Math.floor(Math.random()*layouts.length)];
-  for(const key of ["whole","partA","partB"]){
-    const text=$(key==="whole"?"bondWhole":key==="partA"?"bondPartA":"bondPartB");
-    const circle=$(key==="whole"?"bondWholeCircle":key==="partA"?"bondPartACircle":"bondPartBCircle");
-    const square=$(key==="whole"?"bondWholeSquare":key==="partA"?"bondPartASquare":"bondPartBSquare");
+  const keys=["whole","partA","partB",...(isThree?["partC"]:[])];
+  for(const key of keys){
+    const suffix=key==="whole"?"Whole":key==="partA"?"PartA":key==="partB"?"PartB":"PartC";
+    const text=$("bond"+suffix),circle=$("bond"+suffix+"Circle"),square=$("bond"+suffix+"Square");
     const [x,y]=layout[key],size=key==="whole"?144:114;
     circle.setAttribute("cx",x);circle.setAttribute("cy",y);
     square.setAttribute("x",x-size/2);square.setAttribute("y",y-size/2);
@@ -472,29 +497,77 @@ function renderMath(){
     text.textContent=q.shown[key];text.classList.remove("correct","wrong");
     for(const shape of [circle,square]){
       shape.classList.remove("correct","wrong","subtraction-missing");
-      shape.classList.toggle("missing",q.blank===key);
-      shape.classList.toggle("subtraction-missing",q.operation==="-"&&q.blank===key);
+      const missing=q.blank===key||q.blankKeys?.includes(key);
+      shape.classList.toggle("missing",missing);
+      shape.classList.toggle("subtraction-missing",q.operation==="-"&&missing);
     }
   }
-  for(const [id,key] of [["bondLineA","partA"],["bondLineB","partB"]]){
+  const lines=[["bondLineA","partA"],["bondLineB","partB"],...(isThree?[["bondLineC","partC"]]:[])];
+  for(const [id,key] of lines){
     const line=$(id);line.setAttribute("x1",layout.whole[0]);line.setAttribute("y1",layout.whole[1]);
     line.setAttribute("x2",layout[key][0]);line.setAttribute("y2",layout[key][1]);
   }
   $("bondEquation").textContent=mathEquation(q);
-  $("mathFeedback").textContent="";$("mathFeedback").className="mathfeedback";$("mathNext").hidden=true;
-  const options=new Set([q.answer]);
-  while(options.size<3)options.add(Math.max(0,Math.min(10,q.answer+Math.floor(Math.random()*7)-3)));
-  $("mathChoices").innerHTML=shuffle([...options]).map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("");
+  $("mathFeedback").textContent=isThree?"Choose a number in each row.":"";
+  $("mathFeedback").className="mathfeedback";$("mathNext").hidden=true;
+  if(isThree){
+    $("mathChoices").classList.add("multi");
+    $("mathChoices").innerHTML=q.blankKeys.map((key,i)=>{
+      const options=mathNumberOptions(q.answers[key],20,1);
+      return `<div class="choice-group" data-slot="${key}"><div class="choice-title">Missing number ${i+1}</div><div class="choice-row">${options.map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("")}</div></div>`;
+    }).join("");
+  }else{
+    $("mathChoices").classList.remove("multi");
+    const options=mathNumberOptions(q.answer,10,0);
+    $("mathChoices").innerHTML=options.map(n=>`<button type="button" data-answer="${n}">${n}</button>`).join("");
+  }
   pop("bondCard");
 }
+function mathNumberOptions(answer,max,min){
+  const options=new Set([answer]);
+  while(options.size<3)options.add(min+Math.floor(Math.random()*(max-min+1)));
+  return shuffle([...options]);
+}
+function markMathNode(key,value,result){
+  const suffix=key==="whole"?"Whole":key==="partA"?"PartA":key==="partB"?"PartB":"PartC";
+  const text=$("bond"+suffix),circle=$("bond"+suffix+"Circle"),square=$("bond"+suffix+"Square");
+  text.textContent=value;text.classList.remove("correct","wrong");text.classList.add(result);
+  for(const shape of [circle,square]){shape.classList.remove("missing","subtraction-missing","correct","wrong");shape.classList.add(result)}
+}
+function checkThreeMath(q){
+  mathLocked=true;
+  const correctCount=q.blankKeys.filter(key=>q.selected[key]===q.answers[key]).length;
+  q.blankKeys.forEach(key=>markMathNode(key,q.selected[key],q.selected[key]===q.answers[key]?"correct":"wrong"));
+  $("bondEquation").textContent=mathEquation(q);
+  if(correctCount===q.blankKeys.length)mathScore++;
+  for(const group of $("mathChoices").children){
+    const key=group.dataset.slot;
+    for(const option of group.querySelectorAll("button")){
+      option.disabled=true;
+      if(Number(option.dataset.answer)===q.answers[key])option.classList.add("correct");
+      else if(Number(option.dataset.answer)===q.selected[key])option.classList.add("wrong");
+    }
+  }
+  $("mathFeedback").classList.add(correctCount===q.blankKeys.length?"correct":"wrong");
+  $("mathFeedback").textContent=correctCount===q.blankKeys.length?"✓ Both numbers are right!":`✗ The missing numbers are ${q.blankKeys.map(key=>q.answers[key]).join(" and ")}.`;
+  $("mathNext").textContent=mathIndex+1===mathQuestions.length?"See my stars":"Next";$("mathNext").hidden=false;
+}
 $("mathChoices").addEventListener("click",e=>{
-  const b=e.target.closest("button");if(!b||mathLocked)return;mathLocked=true;
+  const b=e.target.closest("button");if(!b||mathLocked)return;
+  const q=mathQuestions[mathIndex];
+  if(q.kind==="three"){
+    const group=b.closest(".choice-group"),key=group.dataset.slot;
+    if(Object.prototype.hasOwnProperty.call(q.selected,key))return;
+    q.selected[key]=Number(b.dataset.answer);
+    q.shown[key]=q.selected[key];$("bondEquation").textContent=mathEquation(q);
+    $("bond"+(key==="partA"?"PartA":key==="partB"?"PartB":"PartC")).textContent=q.selected[key];
+    group.querySelectorAll("button").forEach(option=>option.disabled=true);
+    if(q.blankKeys.every(slot=>Object.prototype.hasOwnProperty.call(q.selected,slot)))checkThreeMath(q);
+    return;
+  }
+  mathLocked=true;
   const answer=Number(b.dataset.answer),correct=answer===mathQuestions[mathIndex].answer;
-  const q=mathQuestions[mathIndex],text=$(q.blank==="whole"?"bondWhole":q.blank==="partA"?"bondPartA":"bondPartB");
-  const circle=$(q.blank==="whole"?"bondWholeCircle":q.blank==="partA"?"bondPartACircle":"bondPartBCircle");
-  const square=$(q.blank==="whole"?"bondWholeSquare":q.blank==="partA"?"bondPartASquare":"bondPartBSquare");
-  text.textContent=answer;text.classList.add(correct?"correct":"wrong");
-  for(const shape of [circle,square]){shape.classList.remove("missing","subtraction-missing");shape.classList.add(correct?"correct":"wrong")}
+  markMathNode(q.blank,answer,correct?"correct":"wrong");
   q.shown[q.blank]=answer;$("bondEquation").textContent=mathEquation(q);
   if(correct)mathScore++;
   [...$("mathChoices").children].forEach(option=>{option.disabled=true;if(Number(option.dataset.answer)===mathQuestions[mathIndex].answer)option.classList.add("correct");else if(option===b)option.classList.add("wrong")});
@@ -513,7 +586,8 @@ const load=f=>fetch(f,{cache:"no-cache"}).then(r=>{if(!r.ok)throw new Error(f);r
 load("words.json")
   .then(d=>{DECKS=d;return load("sentences.json").catch(()=>[])})
   .then(s=>{SENTS=s;return load("numberBonds.json").catch(()=>[])})
-  .then(b=>{MATH=b;home()})
+  .then(b=>{MATH=b;return load("threeNumberBonds.json").catch(()=>[])})
+  .then(b=>{MATH3=b;home()})
   .catch(()=>{$("list").innerHTML='<p class="sub">Could not load the word lists.</p>';show("home")});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
