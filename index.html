@@ -25,9 +25,11 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .sub{font-size:clamp(24px,4vw,32px);margin:0 0 32px}
 #home h1{font-size:clamp(42px,8vw,68px);margin:10px 0 2px}
 #home .sub{font-size:clamp(20px,3.5vw,28px);margin:0 0 14px}
-.deck{width:100%;flex:1;min-height:0;background:var(--paper);border-radius:24px;padding:10px 20px;margin:0;text-align:left;box-shadow:0 5px 0 rgba(31,42,68,.25);display:flex;flex-direction:column;justify-content:center}
+.deck{width:100%;flex:1;min-height:0;background:var(--paper);border-radius:24px;padding:10px 16px;margin:0;text-align:left;box-shadow:0 5px 0 rgba(31,42,68,.25);display:flex;align-items:center;gap:10px}
+.deck-main{flex:1;min-width:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;justify-content:center}
 .deck b{display:block;font-size:clamp(26px,5vw,38px);line-height:1.05}
 .deck span{display:block;font-size:clamp(17px,3.2vw,22px);line-height:1.1;margin:3px 0 7px}
+.deck-reset{flex:0 0 auto;min-height:44px;padding:8px 10px;border-radius:15px;background:#f3ead5;font-size:clamp(14px,2.8vw,18px);font-weight:700;white-space:nowrap}
 #list{flex:1;min-height:0;overflow:visible;padding:0 4px;display:flex;flex-direction:column;gap:10px}
 .bar{display:block;height:18px;border-radius:9px;background:var(--line);overflow:hidden}
 .bar u{display:block;height:100%;background:var(--go);border-radius:9px}
@@ -150,7 +152,8 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   #home h1{font-size:clamp(36px,7vw,52px);margin:4px 0 2px}
   #home .sub{font-size:18px;margin-bottom:8px}
   #list{gap:7px}
-  .deck{padding:7px 16px;border-radius:20px}
+  .deck{padding:7px 12px;border-radius:20px;gap:7px}
+  .deck-reset{min-height:40px;padding:6px 8px;font-size:14px}
   .deck b{font-size:clamp(24px,4.5vw,32px)}
   .deck span{font-size:clamp(15px,3vw,19px);margin:2px 0 5px}
   .deck .activity-progress{height:18px}
@@ -166,6 +169,18 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   .scramble-bank{min-height:112px;gap:8px;padding:10px 2px 6px}
   .scramble-word{min-height:54px;padding:7px 12px}
 }
+@media(max-height:600px){
+  #app{padding:max(8px,env(safe-area-inset-top)) 16px max(8px,env(safe-area-inset-bottom))}
+  #home h1{font-size:34px;margin:0 0 1px}
+  #home .sub{font-size:16px;margin-bottom:4px}
+  #list{gap:4px}
+  .deck{padding:4px 8px;gap:5px}
+  .deck b{font-size:22px}
+  .deck span{font-size:13px;margin:1px 0 4px}
+  .deck-reset{min-height:32px;padding:4px 6px;font-size:12px}
+  .footer .micbtn{width:44px;height:44px}
+  .footer .link{font-size:16px;padding:8px 4px}
+}
 </style>
 </head>
 <body>
@@ -174,7 +189,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <h1>Learning is fun</h1>
     <p class="sub">Pick something to practice</p>
     <div id="list"></div>
-    <div class="footer"><button class="micbtn" id="recOpen" aria-label="Parents: record voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button><button class="link install-link" id="installApp">Install app</button><button class="link" id="reset">Start over</button></div>
+    <div class="footer"><button class="micbtn" id="recOpen" aria-label="Parents: record voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button><button class="link install-link" id="installApp">Install app</button></div>
   </section>
 
   <section class="screen" id="play">
@@ -291,7 +306,10 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(learned))}catch(e){}
 let activityProgress=(()=>{try{return JSON.parse(localStorage.getItem(ACTIVITY_KEY))||{}}catch(e){return{}}})();
 for(const key of ["reading","building","math"]){
   const state=activityProgress[key]||{};
-  activityProgress[key]={block:Number.isInteger(state.block)&&state.block>0?state.block:1,progress:Number.isInteger(state.progress)&&state.progress>=0?state.progress:0,items:Array.isArray(state.items)?state.items:[]};
+  const block=Number.isInteger(state.block)&&state.block>0?state.block:1;
+  const progress=Number.isInteger(state.progress)&&state.progress>=0?state.progress:0;
+  const blockSize=key==="building"?10:20;
+  activityProgress[key]={block,progress,completed:Number.isInteger(state.completed)&&state.completed>=0?state.completed:(block-1)*blockSize+progress,items:Array.isArray(state.items)?state.items:[]};
 }
 function saveActivityProgress(){try{localStorage.setItem(ACTIVITY_KEY,JSON.stringify(activityProgress))}catch(e){}}
 function shuffledBlock(source,size){
@@ -310,14 +328,18 @@ function updateActivityProgress(id,key,size){
   const state=activityProgress[key];
   $(id).style.width=`${Math.round(100*state.progress/size)}%`;
 }
-function blockMarkup(key,size,label){
-  const state=activityProgress[key],pct=Math.round(100*state.progress/size);
-  return `<span style="margin-bottom:0">${state.progress} of ${size} ${label}</span><i class="bar activity-progress"><u style="width:${pct}%"></u></i>`;
+function blockMarkup(key,total,label){
+  const state=activityProgress[key],completed=Math.min(state.completed,total),pct=total?Math.round(100*completed/total):0;
+  return `<span>${completed} of ${total} ${label}</span><i class="bar activity-progress"><u style="width:${pct}%"></u></i>`;
 }
+function markActivityComplete(key,total){activityProgress[key].completed=Math.min(total,activityProgress[key].completed+1);saveActivityProgress()}
 // all words are one stack now; fold in progress saved under the old lists
 if(!Array.isArray(learned.all)){learned={all:[...new Set(Object.values(learned).flat())]};save()}
 const known=()=>new Set(learned.all);
 const allWords=()=>[...new Set(DECKS.flatMap(d=>d.words))];
+const readableSentences=()=>[...new Set(SENTS)];
+const buildableSentences=()=>[...new Set(SENTS.filter(sentence=>sentence.trim().split(/\s+/).length<=6))];
+const availableMathBonds=()=>new Set(MATH.map(item=>JSON.stringify(item))).size+new Set(MATH3.map(item=>JSON.stringify(item))).size;
 let queue=[],total=0,cardIndex=0,cur="",sq=[];
 const clips=new Map(),player=new Audio();
 const req=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
@@ -388,13 +410,14 @@ document.addEventListener("touchend",()=>{try{speechSynthesis.speak(new SpeechSy
 
 function home(){
   const all=allWords(),k=known(),n=all.filter(w=>k.has(w)).length,pct=all.length?Math.round(100*n/all.length):0;
+  const readingTotal=readableSentences().length,buildingTotal=buildableSentences().length,mathTotal=availableMathBonds();
   const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
   $("installApp").hidden=installed;
   $("list").innerHTML=
-    `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
-    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b>${blockMarkup("reading",20,"read")}</button>`:"")+
-    (SENTS.length?`<button class="deck" data-act="scramble"><b>Build a sentence</b>${blockMarkup("building",10,"built")}</button>`:"")+
-    (MATH.length||MATH3.length?`<button class="deck" data-act="math"><b>Number bonds</b>${blockMarkup("math",20,"solved")}</button>`:"");
+    `<div class="deck"><button class="deck-main" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button><button class="deck-reset" data-reset="words">Start over</button></div>`+
+    (readingTotal?`<div class="deck"><button class="deck-main" data-act="sent"><b>Sentences</b>${blockMarkup("reading",readingTotal,"read")}</button><button class="deck-reset" data-reset="reading">Start over</button></div>`:"")+
+    (buildingTotal?`<div class="deck"><button class="deck-main" data-act="scramble"><b>Build a sentence</b>${blockMarkup("building",buildingTotal,"built")}</button><button class="deck-reset" data-reset="building">Start over</button></div>`:"")+
+    (mathTotal?`<div class="deck"><button class="deck-main" data-act="math"><b>Number bonds</b>${blockMarkup("math",mathTotal,"solved")}</button><button class="deck-reset" data-reset="math">Start over</button></div>`:"");
   show("home");
 }
 function showInstallHelp(){
@@ -518,12 +541,12 @@ function finishBlock(key,message){
 }
 function nextSent(){
   const state=activityProgress.reading;
-  state.progress++;saveActivityProgress();
+  state.progress++;markActivityComplete("reading",readableSentences().length);
   if(state.progress>=20){finishBlock("reading","You read 20 sentences!");return}
   showSent();
 }
 function startSent(){
-  prepareBlock("reading",20,()=>shuffledBlock(SENTS,20));
+  prepareBlock("reading",20,()=>shuffledBlock(readableSentences(),20));
   show("sent");showSent();
 }
 
@@ -560,7 +583,7 @@ function nextScrambleSentence(){
   renderScrambleWords();
 }
 function startScramble(){
-  const shortSentences=SENTS.filter(sentence=>sentence.trim().split(/\s+/).length<=6);
+  const shortSentences=buildableSentences();
   if(!shortSentences.length){show("buildSent");$("scrambleFeedback").textContent="No short sentences are available yet.";return}
   prepareBlock("building",10,()=>shuffledBlock(shortSentences,10));
   scrambleIndex=0;scrambleTarget="";show("buildSent");nextScrambleSentence();
@@ -572,7 +595,7 @@ function checkScrambleSentence(){
   feedback.textContent=correct?"✓ Great job! The sentence is in order.":scrambleSlots.some(token=>!token)?"Drag a word to every empty tile.":"Try again. Move the words around.";
   if(correct){
     scrambleLocked=true;$("checkScramble").hidden=true;$("nextScramble").hidden=false;
-    activityProgress.building.progress++;saveActivityProgress();
+    activityProgress.building.progress++;markActivityComplete("building",buildableSentences().length);
     updateActivityProgress("buildProgress","building",10);
     $("buildSentCount").textContent=`Block ${activityProgress.building.block} · ${activityProgress.building.progress} of 10 complete`;
     if(activityProgress.building.progress>=10)$("nextScramble").textContent="See my stars";
@@ -622,8 +645,19 @@ $("checkScramble").addEventListener("click",checkScrambleSentence);
 $("nextScramble").addEventListener("click",()=>{if(activityProgress.building.progress>=10)finishBlock("building","You built 10 sentences!");else nextScrambleSentence()});
 $("buildBack").addEventListener("click",home);
 
+function startOverActivity(key){
+  if(key==="words"){
+    learned={all:[]};save();
+  }else if(activityProgress[key]){
+    const state=activityProgress[key];state.block=1;state.progress=0;state.completed=0;state.items=[];
+    saveActivityProgress();
+  }
+  home();
+}
 $("list").addEventListener("click",e=>{
-  const b=e.target.closest(".deck");if(!b)return;
+  const reset=e.target.closest("[data-reset]");
+  if(reset){startOverActivity(reset.dataset.reset);return}
+  const b=e.target.closest(".deck-main");if(!b)return;
   if(b.dataset.act==="sent")startSent();else if(b.dataset.act==="scramble")startScramble();else if(b.dataset.act==="math")startMath();else start();
 });
 $("installApp").addEventListener("click",installApp);
@@ -673,7 +707,6 @@ $("recPrev").addEventListener("click",()=>stepRec(-1));
 $("recNext").addEventListener("click",()=>stepRec(1));
 $("speak3").addEventListener("click",()=>say(ritems[ri]));
 $("back3").addEventListener("click",leaveRec);
-$("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={all:[]};save();home()}});
 
 let mathQuestions=[],mathIndex=0,mathScore=0,mathLocked=false;
 function makeMathQuestion(bond,forcedOperation){
@@ -856,7 +889,7 @@ $("mathChoices").addEventListener("click",e=>{
   $("mathNext").textContent=mathIndex+1===mathQuestions.length?"See my stars":"Next";$("mathNext").hidden=false;
 });
 $("mathNext").addEventListener("click",()=>{
-  activityProgress.math.progress++;saveActivityProgress();
+  activityProgress.math.progress++;markActivityComplete("math",availableMathBonds());
   if(activityProgress.math.progress<20){mathIndex=activityProgress.math.progress;renderMath()}
   else finishBlock("math",`You got ${mathScore} out of 20 number bonds!`);
 });
