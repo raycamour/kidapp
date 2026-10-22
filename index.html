@@ -25,11 +25,11 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .sub{font-size:clamp(24px,4vw,32px);margin:0 0 32px}
 #home h1{font-size:clamp(42px,8vw,68px);margin:10px 0 2px}
 #home .sub{font-size:clamp(20px,3.5vw,28px);margin:0 0 14px}
-.deck{width:100%;flex:1;min-height:0;background:var(--paper);border-radius:24px;padding:10px 16px;margin:0;text-align:left;box-shadow:0 5px 0 rgba(31,42,68,.25);display:flex;align-items:center;gap:10px}
-.deck-main{flex:1;min-width:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;justify-content:center}
+.deck{position:relative;width:100%;flex:1;min-height:0;background:var(--paper);border-radius:24px;padding:10px 16px;margin:0;text-align:left;box-shadow:0 5px 0 rgba(31,42,68,.25);display:flex;align-items:center}
+.deck-main{flex:1;min-width:0;background:none;padding:0 48px 0 0;text-align:left;display:flex;flex-direction:column;justify-content:center}
 .deck b{display:block;font-size:clamp(26px,5vw,38px);line-height:1.05}
 .deck span{display:block;font-size:clamp(17px,3.2vw,22px);line-height:1.1;margin:3px 0 7px}
-.deck-reset{flex:0 0 auto;min-height:44px;padding:8px 10px;border-radius:15px;background:#f3ead5;font-size:clamp(14px,2.8vw,18px);font-weight:700;white-space:nowrap}
+.deck-reset{position:absolute;top:10px;right:10px;width:40px;height:40px;padding:0;border-radius:50%;background:#f3ead5;color:var(--ink);font-family:Arial,sans-serif;font-size:30px;line-height:1;display:grid;place-items:center}
 #list{flex:1;min-height:0;overflow:visible;padding:0 4px;display:flex;flex-direction:column;gap:10px}
 .bar{display:block;height:18px;border-radius:9px;background:var(--line);overflow:hidden}
 .bar u{display:block;height:100%;background:var(--go);border-radius:9px}
@@ -152,8 +152,8 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   #home h1{font-size:clamp(36px,7vw,52px);margin:4px 0 2px}
   #home .sub{font-size:18px;margin-bottom:8px}
   #list{gap:7px}
-  .deck{padding:7px 12px;border-radius:20px;gap:7px}
-  .deck-reset{min-height:40px;padding:6px 8px;font-size:14px}
+  .deck{padding:7px 12px;border-radius:20px}
+  .deck-reset{top:7px;right:7px;width:38px;height:38px;font-size:28px}
   .deck b{font-size:clamp(24px,4.5vw,32px)}
   .deck span{font-size:clamp(15px,3vw,19px);margin:2px 0 5px}
   .deck .activity-progress{height:18px}
@@ -174,10 +174,10 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   #home h1{font-size:34px;margin:0 0 1px}
   #home .sub{font-size:16px;margin-bottom:4px}
   #list{gap:4px}
-  .deck{padding:4px 8px;gap:5px}
+  .deck{padding:4px 8px}
   .deck b{font-size:22px}
   .deck span{font-size:13px;margin:1px 0 4px}
-  .deck-reset{min-height:32px;padding:4px 6px;font-size:12px}
+  .deck-reset{top:4px;right:4px;width:34px;height:34px;font-size:25px}
   .footer .micbtn{width:44px;height:44px}
   .footer .link{font-size:16px;padding:8px 4px}
 }
@@ -414,10 +414,10 @@ function home(){
   const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
   $("installApp").hidden=installed;
   $("list").innerHTML=
-    `<div class="deck"><button class="deck-main" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button><button class="deck-reset" data-reset="words">Start over</button></div>`+
-    (readingTotal?`<div class="deck"><button class="deck-main" data-act="sent"><b>Sentences</b>${blockMarkup("reading",readingTotal,"read")}</button><button class="deck-reset" data-reset="reading">Start over</button></div>`:"")+
-    (buildingTotal?`<div class="deck"><button class="deck-main" data-act="scramble"><b>Build a sentence</b>${blockMarkup("building",buildingTotal,"built")}</button><button class="deck-reset" data-reset="building">Start over</button></div>`:"")+
-    (mathTotal?`<div class="deck"><button class="deck-main" data-act="math"><b>Number bonds</b>${blockMarkup("math",mathTotal,"solved")}</button><button class="deck-reset" data-reset="math">Start over</button></div>`:"");
+    `<div class="deck"><button class="deck-main" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button><button class="deck-reset" data-reset="words" aria-label="Start over: All words" title="Start over">↺</button></div>`+
+    (readingTotal?`<div class="deck"><button class="deck-main" data-act="sent"><b>Sentences</b>${blockMarkup("reading",readingTotal,"read")}</button><button class="deck-reset" data-reset="reading" aria-label="Start over: Sentences" title="Start over">↺</button></div>`:"")+
+    (buildingTotal?`<div class="deck"><button class="deck-main" data-act="scramble"><b>Build a sentence</b>${blockMarkup("building",buildingTotal,"built")}</button><button class="deck-reset" data-reset="building" aria-label="Start over: Build a sentence" title="Start over">↺</button></div>`:"")+
+    (mathTotal?`<div class="deck"><button class="deck-main" data-act="math"><b>Number bonds</b>${blockMarkup("math",mathTotal,"solved")}</button><button class="deck-reset" data-reset="math" aria-label="Start over: Number bonds" title="Start over">↺</button></div>`:"");
   show("home");
 }
 function showInstallHelp(){
