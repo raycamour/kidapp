@@ -1,4 +1,4 @@
-const CACHE = "kidapp-v17";
+const CACHE = "kidapp-v18";
 const FILES = ["./", "index.html", "manifest.json", "words.json", "sentences.json", "numberBonds.json", "threeNumberBonds.json", "icon-180.png", "icon-192.png", "icon-512.png", "app-icon.svg"];
 
 self.addEventListener("install", e => {

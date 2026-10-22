@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Word Cards">
+<meta name="apple-mobile-web-app-title" content="Learning is fun">
 <meta name="theme-color" content="#ffc83d">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
-<title>Word Cards</title>
+<title>Learning is fun</title>
 <style>
 :root{--bus:#ffc83d;--ink:#1f2a44;--paper:#fffdf7;--line:#d3e4f6;--margin:#f2a0a0;--go:#16804d;--again:#c43d28}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -26,8 +26,12 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .deck{width:100%;background:var(--paper);border-radius:30px;padding:28px 32px;margin-bottom:24px;text-align:left;box-shadow:0 7px 0 rgba(31,42,68,.25)}
 .deck b{display:block;font-size:clamp(32px,5.5vw,46px)}
 .deck span{display:block;font-size:clamp(22px,3.4vw,28px);margin:4px 0 16px}
+#list{flex:1;min-height:0;overflow-y:auto;padding:0 4px}
 .bar{display:block;height:18px;border-radius:9px;background:var(--line);overflow:hidden}
 .bar u{display:block;height:100%;background:var(--go);border-radius:9px}
+.deck .activity-progress{height:14px;margin-top:10px}
+.activity-progress{margin:-2px 0 14px}
+.activity-progress .bar{height:14px}
 .link{background:none;text-decoration:underline;font-size:22px;opacity:.75;padding:18px;margin:0}
 .footer{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .install-link{font-size:20px;padding:14px 6px}
@@ -96,9 +100,9 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 .know,.big{background:var(--go)}
 
 #done{align-items:center;justify-content:center;text-align:center}
-#mathDone{align-items:center;justify-content:center;text-align:center}
-#mathDone h2{font-size:clamp(52px,10vw,84px);margin:16px 0 8px}
-#mathDone p{font-size:clamp(26px,4.5vw,36px);margin:0 0 48px}
+#blockDone{align-items:center;justify-content:center;text-align:center}
+#blockDone h2{font-size:clamp(52px,10vw,84px);margin:16px 0 8px}
+#blockDone p{font-size:clamp(26px,4.5vw,36px);margin:0 0 32px}
 .stars{font-size:clamp(52px,13vw,112px);line-height:1;letter-spacing:.03em}
 #done h2{font-size:clamp(52px,10vw,84px);margin:16px 0 8px}
 #done p{font-size:clamp(26px,4.5vw,36px);margin:0 0 48px}
@@ -156,7 +160,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 <body>
 <div id="app">
   <section class="screen" id="home">
-    <h1>Word cards</h1>
+    <h1>Learning is fun</h1>
     <p class="sub">Pick something to practice</p>
     <div id="list"></div>
     <div class="footer"><button class="micbtn" id="recOpen" aria-label="Parents: record voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button><button class="link install-link" id="installApp">Install app</button><button class="link" id="reset">Start over</button></div>
@@ -178,7 +182,8 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   </section>
 
   <section class="screen" id="sent">
-    <div class="top"><button class="back" id="back2">Home</button></div>
+    <div class="top"><button class="back" id="back2">Home</button><div class="reccount" id="readCount"></div></div>
+    <div class="activity-progress"><i class="bar"><u id="readProgress" style="width:0%"></u></i></div>
     <div class="card" id="card2">
       <div class="sentence" id="sentence"></div>
       <button class="speak" id="speak2" aria-label="Hear the sentence"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
@@ -188,6 +193,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 
   <section class="screen" id="buildSent">
     <div class="top"><button class="back" id="buildBack">Home</button><div class="reccount" id="buildSentCount"></div></div>
+    <div class="activity-progress"><i class="bar"><u id="buildProgress" style="width:0%"></u></i></div>
     <div class="card scramble-card">
       <p class="scramble-instruction">Drag each word into the matching tile.</p>
       <div class="sentence-slots" id="sentenceSlots" aria-label="Sentence answer tiles"></div>
@@ -199,6 +205,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 
   <section class="screen" id="math">
     <div class="top"><button class="back" id="mathBack">Home</button><div class="reccount" id="mathCount"></div></div>
+    <div class="activity-progress"><i class="bar"><u id="mathProgress" style="width:0%"></u></i></div>
     <div class="card bondcard" id="bondCard">
       <svg class="bondsvg" id="bondSvg" viewBox="0 0 400 300" role="img" aria-label="Number bond diagram">
         <line id="bondLineA" class="bondline" x1="200" y1="82" x2="95" y2="220"/><line id="bondLineB" class="bondline" x1="200" y1="82" x2="305" y2="220"/><line id="bondLineC" class="bondline three-bond" x1="200" y1="82" x2="200" y2="220"/>
@@ -214,9 +221,9 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     <div class="actions one"><button class="know mathnext" id="mathNext" hidden>Next</button></div>
   </section>
 
-  <section class="screen" id="mathDone">
-    <div class="stars">★★★★★</div><h2>Math time!</h2><p id="mathDoneText"></p>
-    <button class="big" id="mathHome">Back home</button>
+  <section class="screen" id="blockDone">
+    <div class="stars">★★★★★</div><h2 id="blockDoneTitle">Block complete!</h2><p id="blockDoneText"></p>
+    <button class="big" id="blockNext">Next block</button><button class="link" id="blockHome">Back home</button>
   </section>
 
   <section class="screen" id="rec">
@@ -254,7 +261,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 
 <div id="installHelp" role="dialog" aria-modal="true" aria-labelledby="installTitle">
   <div class="installbox">
-    <h2 id="installTitle">Install Word Cards</h2>
+    <h2 id="installTitle">Install Learning is fun</h2>
     <p id="installHelpText"></p>
     <button id="installClose">Got it</button>
   </div>
@@ -265,10 +272,37 @@ let DECKS=[],SENTS=[],MATH=[],MATH3=[];
 let installPrompt=null;
 const SAY={a:"uh"};
 const KEY="wordcards-learned-v1";
+const ACTIVITY_KEY="learning-is-fun-progress-v1";
 const SIZE=20;
 const $=id=>document.getElementById(id);
 let learned=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}})();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(learned))}catch(e){}};
+let activityProgress=(()=>{try{return JSON.parse(localStorage.getItem(ACTIVITY_KEY))||{}}catch(e){return{}}})();
+for(const key of ["reading","building","math"]){
+  const state=activityProgress[key]||{};
+  activityProgress[key]={block:Number.isInteger(state.block)&&state.block>0?state.block:1,progress:Number.isInteger(state.progress)&&state.progress>=0?state.progress:0,items:Array.isArray(state.items)?state.items:[]};
+}
+function saveActivityProgress(){try{localStorage.setItem(ACTIVITY_KEY,JSON.stringify(activityProgress))}catch(e){}}
+function shuffledBlock(source,size){
+  const result=[],pool=[];
+  while(result.length<size){if(!pool.length)pool.push(...shuffle(source.slice()));result.push(pool.pop())}
+  return result;
+}
+function prepareBlock(key,size,makeItems){
+  const state=activityProgress[key];
+  if(state.progress>=size){state.block++;state.progress=0;state.items=[]}
+  if(state.items.length!==size)state.items=makeItems();
+  saveActivityProgress();
+  return state;
+}
+function updateActivityProgress(id,key,size){
+  const state=activityProgress[key];
+  $(id).style.width=`${Math.round(100*state.progress/size)}%`;
+}
+function blockMarkup(key,size,label){
+  const state=activityProgress[key],pct=Math.round(100*state.progress/size);
+  return `<span style="margin-bottom:0">${label} · Block ${state.block} · ${state.progress} of ${size}</span><i class="bar activity-progress"><u style="width:${pct}%"></u></i>`;
+}
 // all words are one stack now; fold in progress saved under the old lists
 if(!Array.isArray(learned.all)){learned={all:[...new Set(Object.values(learned).flat())]};save()}
 const known=()=>new Set(learned.all);
@@ -347,9 +381,9 @@ function home(){
   $("installApp").hidden=installed;
   $("list").innerHTML=
     `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
-    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b><span style="margin-bottom:0">Read and hear a sentence</span></button>`:"")+
-    (SENTS.length?`<button class="deck" data-act="scramble"><b>Build a sentence</b><span style="margin-bottom:0">Put the words in the right order</span></button>`:"")+
-    (MATH.length||MATH3.length?`<button class="deck" data-act="math"><b>Number bonds</b><span style="margin-bottom:0">Build totals with two or three parts</span></button>`:"");
+    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b>${blockMarkup("reading",20,"Read and hear")}</button>`:"")+
+    (SENTS.length?`<button class="deck" data-act="scramble"><b>Build a sentence</b>${blockMarkup("building",10,"Put the words in order")}</button>`:"")+
+    (MATH.length||MATH3.length?`<button class="deck" data-act="math"><b>Number bonds</b>${blockMarkup("math",20,"Add, subtract, and build totals")}</button>`:"");
   show("home");
 }
 function showInstallHelp(){
@@ -455,15 +489,34 @@ async function toggleRec(){
 }
 async function stepRec(d){if(!ritems.length)return;await settleRec();ri=(ri+d+ritems.length)%ritems.length;showRec()}
 
-function nextSent(){
-  if(!sq.length)sq=shuffle(SENTS.slice());
-  cur=sq.shift();
+function showSent(){
+  const state=activityProgress.reading;
+  cur=state.items[state.progress];
+  const shown=state.progress+1;
+  $("readCount").textContent=`Block ${state.block} · Sentence ${shown} of 20`;
+  updateActivityProgress("readProgress","reading",20);
   $("sentence").textContent=cur;
   pop("card2");
 }
-function startSent(){sq=[];show("sent");nextSent()}
+let completedActivity="";
+function finishBlock(key,message){
+  completedActivity=key;
+  $("blockDoneTitle").textContent="Block complete!";
+  $("blockDoneText").textContent=message;
+  show("blockDone");
+}
+function nextSent(){
+  const state=activityProgress.reading;
+  state.progress++;saveActivityProgress();
+  if(state.progress>=20){finishBlock("reading","You read 20 sentences!");return}
+  showSent();
+}
+function startSent(){
+  prepareBlock("reading",20,()=>shuffledBlock(SENTS,20));
+  show("sent");showSent();
+}
 
-let scrambleQueue=[],scrambleTarget="",scrambleTokens=[],scrambleBank=[],scrambleSlots=[],scrambleIndex=0,scrambleLocked=false,sentenceDrag=null;
+let scrambleTarget="",scrambleTokens=[],scrambleBank=[],scrambleSlots=[],scrambleIndex=0,scrambleLocked=false,sentenceDrag=null;
 function renderScrambleWords(){
   const slots=$("sentenceSlots"),bank=$("scrambleBank");slots.innerHTML="";bank.innerHTML="";
   scrambleSlots.forEach((token,index)=>{
@@ -480,23 +533,39 @@ function renderScrambleWords(){
   });
 }
 function nextScrambleSentence(){
-  if(!scrambleQueue.length){scrambleQueue=shuffle(SENTS.filter(sentence=>sentence.trim().split(/\s+/).length<=6));if(!scrambleQueue.length)return;if(scrambleQueue.length>1&&scrambleQueue[scrambleQueue.length-1]===scrambleTarget)scrambleQueue.unshift(scrambleQueue.pop())}
-  scrambleTarget=scrambleQueue.pop();scrambleTokens=scrambleTarget.trim().split(/\s+/).map((word,id)=>({word,id}));
+  const state=activityProgress.building;
+  if(state.progress>=10){finishBlock("building","You built 10 sentences!");return}
+  scrambleIndex=state.progress+1;
+  scrambleTarget=state.items[state.progress];if(!scrambleTarget)return;
+  scrambleTokens=scrambleTarget.trim().split(/\s+/).map((word,id)=>({word,id}));
   scrambleBank=shuffle(scrambleTokens.slice());scrambleSlots=Array(scrambleTokens.length).fill(null);
   if(scrambleTokens.length>1&&scrambleBank.every((token,index)=>token.id===index))scrambleBank.push(scrambleBank.shift());
-  scrambleLocked=false;scrambleIndex++;
-  $("buildSentCount").textContent=`Sentence ${scrambleIndex}`;
+  scrambleLocked=false;
+  $("buildSentCount").textContent=`Block ${state.block} · Sentence ${scrambleIndex} of 10`;
+  $("nextScramble").textContent="Next sentence";
+  updateActivityProgress("buildProgress","building",10);
   $("scrambleFeedback").textContent="";$("scrambleFeedback").className="scramblefeedback";
   $("checkScramble").hidden=false;$("nextScramble").hidden=true;
   renderScrambleWords();
 }
-function startScramble(){scrambleQueue=[];scrambleIndex=0;scrambleTarget="";show("buildSent");nextScrambleSentence();if(!scrambleTarget){$("scrambleFeedback").textContent="No short sentences are available yet."}}
+function startScramble(){
+  const shortSentences=SENTS.filter(sentence=>sentence.trim().split(/\s+/).length<=6);
+  if(!shortSentences.length){show("buildSent");$("scrambleFeedback").textContent="No short sentences are available yet.";return}
+  prepareBlock("building",10,()=>shuffledBlock(shortSentences,10));
+  scrambleIndex=0;scrambleTarget="";show("buildSent");nextScrambleSentence();
+}
 function checkScrambleSentence(){
   const correct=scrambleSlots.length===scrambleTokens.length&&scrambleSlots.every((token,index)=>token&&token.id===index);
   const feedback=$("scrambleFeedback");
   feedback.className="scramblefeedback "+(correct?"correct":"wrong");
   feedback.textContent=correct?"✓ Great job! The sentence is in order.":scrambleSlots.some(token=>!token)?"Drag a word to every empty tile.":"Try again. Move the words around.";
-  if(correct){scrambleLocked=true;$("checkScramble").hidden=true;$("nextScramble").hidden=false}
+  if(correct){
+    scrambleLocked=true;$("checkScramble").hidden=true;$("nextScramble").hidden=false;
+    activityProgress.building.progress++;saveActivityProgress();
+    updateActivityProgress("buildProgress","building",10);
+    $("buildSentCount").textContent=`Block ${activityProgress.building.block} · ${activityProgress.building.progress} of 10 complete`;
+    if(activityProgress.building.progress>=10)$("nextScramble").textContent="See my stars";
+  }
 }
 function placeScrambleWord(origin,sourceIndex,destination){
   if(destination.type==="slot"){
@@ -539,7 +608,7 @@ scrambleCard.addEventListener("pointercancel",e=>{
   sentenceDrag=null;renderScrambleWords();
 });
 $("checkScramble").addEventListener("click",checkScrambleSentence);
-$("nextScramble").addEventListener("click",nextScrambleSentence);
+$("nextScramble").addEventListener("click",()=>{if(activityProgress.building.progress>=10)finishBlock("building","You built 10 sentences!");else nextScrambleSentence()});
 $("buildBack").addEventListener("click",home);
 
 $("list").addEventListener("click",e=>{
@@ -559,7 +628,13 @@ $("next").addEventListener("click",nextSent);
 $("back").addEventListener("click",home);
 $("back2").addEventListener("click",home);
 $("mathBack").addEventListener("click",home);
-$("mathHome").addEventListener("click",home);
+$("blockHome").addEventListener("click",home);
+$("blockNext").addEventListener("click",()=>{
+  if(completedActivity==="reading")startSent();
+  else if(completedActivity==="building")startScramble();
+  else if(completedActivity==="math")startMath();
+  else home();
+});
 $("home2").addEventListener("click",home);
 let gateAns=0;
 function openGate(msg){
@@ -590,12 +665,12 @@ $("back3").addEventListener("click",leaveRec);
 $("reset").addEventListener("click",()=>{if(confirm("Clear all learned words and start over?")){learned={all:[]};save();home()}});
 
 let mathQuestions=[],mathIndex=0,mathScore=0,mathLocked=false;
-function makeMathQuestion(bond){
+function makeMathQuestion(bond,forcedOperation){
   const {whole,partA,partB}=bond;
   const blank=["whole","partA","partB"][Math.floor(Math.random()*3)];
   const answer=blank==="whole"?whole:blank==="partA"?partA:partB;
   const shown={whole,partA,partB};shown[blank]="?";
-  const operation=Math.random()<0.5?"+":"-";
+  const operation=forcedOperation||(Math.random()<0.5?"+":"-");
   return{whole,partA,partB,blank,answer,shown,operation};
 }
 function makeThreeMathQuestion(bond){
@@ -613,14 +688,26 @@ function mathEquation(q){
   return `${q.shown.whole} - ${q.shown.partA} = ?`;
 }
 function startMath(){
-  const twoPart=shuffle(MATH.map(makeMathQuestion)).slice(0,5);
-  const threePart=shuffle(MATH3.map(makeThreeMathQuestion)).slice(0,5);
-  mathQuestions=shuffle([...twoPart,...threePart]);mathIndex=0;mathScore=0;show("math");renderMath();
+  if(MATH.length<5||MATH3.length<10){
+    $("mathCount").textContent="Add at least 5 two-part and 10 three-part bonds to the JSON lists.";
+    show("math");return;
+  }
+  const state=prepareBlock("math",20,()=>{
+    const additions=shuffle(MATH.map(bond=>makeMathQuestion(bond,"+"))).slice(0,5);
+    const subtractions=shuffle(MATH.map(bond=>makeMathQuestion(bond,"-"))).slice(0,5);
+    const threePart=shuffle(MATH3.map(makeThreeMathQuestion)).slice(0,10);
+    return shuffle([...additions,...subtractions,...threePart]);
+  });
+  mathQuestions=state.items;mathIndex=state.progress;
+  mathScore=mathQuestions.filter(question=>question.scored).length;
+  show("math");renderMath();
 }
 function renderMath(){
   const q=mathQuestions[mathIndex];mathLocked=false;
+  if(!q)return;
   const isThree=q.kind==="three";
-  $("mathCount").textContent=`${mathIndex+1} of ${mathQuestions.length}`;
+  $("mathCount").textContent=`Block ${activityProgress.math.block} · Question ${mathIndex+1} of 20`;
+  updateActivityProgress("mathProgress","math",20);
   $("bondSvg").classList.toggle("square-on",Math.random()<0.5);
   $("bondSvg").classList.toggle("three-on",isThree);
   const layouts=isThree?[
@@ -691,7 +778,7 @@ function checkThreeMath(q){
   q.blankKeys.forEach(key=>markMathNode(key,q.selected[key],q.selected[key]===q.answers[key]?"correct":"wrong"));
   $("bondEquation").textContent=mathEquation(q);
   q.scored=correctCount===q.blankKeys.length;
-  if(q.scored)mathScore++;
+  if(q.scored&&!q.counted){mathScore++;q.counted=true;saveActivityProgress()}
   for(const group of $("mathChoices").children){
     const key=group.dataset.slot;
     for(const option of group.querySelectorAll(".choice-row button")){
@@ -714,7 +801,7 @@ $("mathChoices").addEventListener("click",e=>{
       if(!Object.prototype.hasOwnProperty.call(q.selected,"partB"))return;
       const wasLocked=mathLocked;
       if(wasLocked)mathScore=Math.max(0,mathScore-(q.scored?1:0));
-      mathLocked=false;q.scored=false;
+      mathLocked=false;q.scored=false;q.counted=false;saveActivityProgress();
       delete q.selected.partB;delete q.selected.partC;
       q.shown.partB="?";q.shown.partC="?";
       for(const key of ["partB","partC"]){
@@ -751,15 +838,16 @@ $("mathChoices").addEventListener("click",e=>{
   const answer=Number(b.dataset.answer),correct=answer===mathQuestions[mathIndex].answer;
   markMathNode(q.blank,answer,correct?"correct":"wrong");
   q.shown[q.blank]=answer;$("bondEquation").textContent=mathEquation(q);
-  if(correct)mathScore++;
+  if(correct&&!q.scored){mathScore++;q.scored=true;q.counted=true;saveActivityProgress()}
   [...$("mathChoices").children].forEach(option=>{option.disabled=true;if(Number(option.dataset.answer)===mathQuestions[mathIndex].answer)option.classList.add("correct");else if(option===b)option.classList.add("wrong")});
   $("mathFeedback").classList.add(correct?"correct":"wrong");
   $("mathFeedback").textContent=correct?"✓ Yes! That’s right!":"✗ Not quite! The answer is "+mathQuestions[mathIndex].answer+".";
   $("mathNext").textContent=mathIndex+1===mathQuestions.length?"See my stars":"Next";$("mathNext").hidden=false;
 });
 $("mathNext").addEventListener("click",()=>{
-  if(++mathIndex<mathQuestions.length)renderMath();
-  else{$("mathDoneText").textContent=`You got ${mathScore} out of ${mathQuestions.length} number bonds.`;show("mathDone")}
+  activityProgress.math.progress++;saveActivityProgress();
+  if(activityProgress.math.progress<20){mathIndex=activityProgress.math.progress;renderMath()}
+  else finishBlock("math",`You got ${mathScore} out of 20 number bonds!`);
 });
 
 loadClips();
