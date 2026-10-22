@@ -63,11 +63,14 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     repeating-linear-gradient(180deg,transparent 0 71px,var(--line) 71px 74px)}
 .word{font-size:clamp(64px,min(24vw,19vh),210px);font-weight:700;letter-spacing:.02em;line-height:1;width:100%;max-width:100%;padding:0 5%;text-align:center;white-space:nowrap}
 .sentence{font-size:clamp(48px,min(9.5vw,7vh),84px);font-weight:700;line-height:1.4;text-align:center;padding:0 6% 120px 16%}
-.scramble-card{display:flex;flex-direction:column;gap:16px;padding:24px;background-image:none;background-color:#e8eef8}
+.scramble-card{display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:16px;padding:24px;overflow-y:auto;background-image:none;background-color:#e8eef8}
 .scramble-instruction{font-size:clamp(28px,5vw,40px);font-weight:700;text-align:center;margin:0}
-.scramble-board{flex:1;min-height:160px;display:flex;flex-wrap:wrap;align-content:flex-end;align-items:flex-end;justify-content:center;gap:14px;padding:18px 4px 28px;touch-action:none}
-.scramble-word{min-height:72px;max-width:100%;padding:10px 20px;border-radius:20px;background:#fff;color:var(--ink);font-size:clamp(26px,5.8vw,42px);font-weight:700;overflow-wrap:anywhere;box-shadow:0 6px 0 rgba(31,42,68,.22);touch-action:none;user-select:none;cursor:grab}
-.scramble-word.dragging{opacity:.65;cursor:grabbing;z-index:2}
+.sentence-slots{flex:1;min-height:180px;display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:14px;padding:18px 4px;border-radius:24px;background:rgba(255,255,255,.42)}
+.answer-slot{height:72px;min-width:78px;max-width:100%;padding:8px 12px;border:3px dashed rgba(31,42,68,.4);border-radius:20px;background:rgba(255,255,255,.35);color:var(--ink);font-size:clamp(25px,5vw,40px);font-weight:700;overflow-wrap:anywhere;touch-action:none;user-select:none}
+.answer-slot.filled{border-style:solid;background:#fff;box-shadow:0 6px 0 rgba(31,42,68,.18);cursor:grab}
+.scramble-bank{display:flex;flex-wrap:wrap;align-content:flex-end;align-items:flex-end;justify-content:center;gap:12px;min-height:142px;padding:16px 4px 10px;border-top:3px dashed rgba(31,42,68,.22);touch-action:none}
+.scramble-word{min-height:66px;max-width:100%;padding:10px 18px;border-radius:20px;background:#fff;color:var(--ink);font-size:clamp(25px,5.4vw,40px);font-weight:700;overflow-wrap:anywhere;box-shadow:0 6px 0 rgba(31,42,68,.22);touch-action:none;user-select:none;cursor:grab}
+.answer-slot.dragging,.scramble-word.dragging{opacity:.65;z-index:2;cursor:grabbing;pointer-events:none}
 .scramblefeedback{min-height:42px;text-align:center;font-size:clamp(24px,4vw,32px);font-weight:700;margin:0}
 .scramblefeedback.correct{color:#12663e}
 .scramblefeedback.wrong{color:#a51e12}
@@ -135,8 +138,10 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   .bondcard{padding:8px 4%;gap:2px}
   .choices button{min-height:66px}
   .scramble-card{padding:14px;gap:8px}
-  .scramble-board{min-height:120px;gap:10px;padding:10px 2px 18px}
-  .scramble-word{min-height:58px;padding:8px 14px}
+  .sentence-slots{min-height:120px;gap:8px;padding:10px 2px}
+  .answer-slot{height:58px;min-width:66px;padding:6px 8px}
+  .scramble-bank{min-height:112px;gap:8px;padding:10px 2px 6px}
+  .scramble-word{min-height:54px;padding:7px 12px}
 }
 </style>
 </head>
@@ -176,8 +181,9 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   <section class="screen" id="buildSent">
     <div class="top"><button class="back" id="buildBack">Home</button><div class="reccount" id="buildSentCount"></div></div>
     <div class="card scramble-card">
-      <p class="scramble-instruction">Drag the words into the right order.</p>
-      <div class="scramble-board" id="scrambleBoard" aria-label="Scrambled sentence words"></div>
+      <p class="scramble-instruction">Drag each word into the matching tile.</p>
+      <div class="sentence-slots" id="sentenceSlots" aria-label="Sentence answer tiles"></div>
+      <div class="scramble-bank" id="scrambleBank" aria-label="Scrambled words"></div>
     </div>
     <p class="scramblefeedback" id="scrambleFeedback" aria-live="polite"></p>
     <div class="actions one"><button class="know" id="checkScramble">Check sentence</button><button class="know" id="nextScramble" hidden>Next sentence</button></div>
@@ -425,19 +431,28 @@ function nextSent(){
 }
 function startSent(){sq=[];show("sent");nextSent()}
 
-let scrambleQueue=[],scrambleTarget="",scrambleWords=[],scrambleIndex=0,scrambleLocked=false,sentenceDrag=null;
+let scrambleQueue=[],scrambleTarget="",scrambleTokens=[],scrambleBank=[],scrambleSlots=[],scrambleIndex=0,scrambleLocked=false,sentenceDrag=null;
 function renderScrambleWords(){
-  const board=$("scrambleBoard");board.innerHTML="";
-  scrambleWords.forEach((word,index)=>{
-    const tile=document.createElement("button");tile.type="button";tile.className="scramble-word";tile.dataset.index=index;
-    tile.setAttribute("aria-label",`Drag word ${word}`);tile.textContent=word;board.appendChild(tile);
+  const slots=$("sentenceSlots"),bank=$("scrambleBank");slots.innerHTML="";bank.innerHTML="";
+  scrambleSlots.forEach((token,index)=>{
+    const tile=document.createElement("button");tile.type="button";tile.className="answer-slot"+(token?" filled":"");tile.dataset.origin="slot";tile.dataset.index=index;
+    const tileFont=Math.min(40,Math.max(25,window.innerWidth*.054));
+    const expectedLength=scrambleTokens[index].word.length;
+    tile.style.width=`${Math.max(78,Math.min(250,expectedLength*tileFont*.55+36))}px`;
+    tile.setAttribute("aria-label",token?`Sentence tile ${index+1}: ${token.word}`:`Empty sentence tile ${index+1}`);
+    tile.textContent=token?token.word:"";slots.appendChild(tile);
+  });
+  scrambleBank.forEach((token,index)=>{
+    const tile=document.createElement("button");tile.type="button";tile.className="scramble-word";tile.dataset.origin="bank";tile.dataset.index=index;
+    tile.setAttribute("aria-label",`Drag word ${token.word}`);tile.textContent=token.word;bank.appendChild(tile);
   });
 }
 function nextScrambleSentence(){
   if(!SENTS.length)return;
   if(!scrambleQueue.length){scrambleQueue=shuffle(SENTS.slice());if(scrambleQueue.length>1&&scrambleQueue[scrambleQueue.length-1]===scrambleTarget)scrambleQueue.unshift(scrambleQueue.pop())}
-  scrambleTarget=scrambleQueue.pop();scrambleWords=shuffle(scrambleTarget.trim().split(/\s+/));
-  if(scrambleWords.length>1&&scrambleWords.join(" ")===scrambleTarget.trim())scrambleWords.push(scrambleWords.shift());
+  scrambleTarget=scrambleQueue.pop();scrambleTokens=scrambleTarget.trim().split(/\s+/).map((word,id)=>({word,id}));
+  scrambleBank=shuffle(scrambleTokens.slice());scrambleSlots=Array(scrambleTokens.length).fill(null);
+  if(scrambleTokens.length>1&&scrambleBank.every((token,index)=>token.id===index))scrambleBank.push(scrambleBank.shift());
   scrambleLocked=false;scrambleIndex++;
   $("buildSentCount").textContent=`Sentence ${scrambleIndex}`;
   $("scrambleFeedback").textContent="";$("scrambleFeedback").className="scramblefeedback";
@@ -446,42 +461,49 @@ function nextScrambleSentence(){
 }
 function startScramble(){scrambleQueue=[];scrambleIndex=0;show("buildSent");nextScrambleSentence()}
 function checkScrambleSentence(){
-  const correct=scrambleWords.join(" ")===scrambleTarget.trim();
+  const correct=scrambleSlots.length===scrambleTokens.length&&scrambleSlots.every((token,index)=>token&&token.id===index);
   const feedback=$("scrambleFeedback");
   feedback.className="scramblefeedback "+(correct?"correct":"wrong");
-  feedback.textContent=correct?"✓ Great job! The sentence is in order.":"Try again. Move the words around.";
+  feedback.textContent=correct?"✓ Great job! The sentence is in order.":scrambleSlots.some(token=>!token)?"Drag a word to every empty tile.":"Try again. Move the words around.";
   if(correct){scrambleLocked=true;$("checkScramble").hidden=true;$("nextScramble").hidden=false}
 }
-function swapScrambleWords(from,to){
-  if(from===to||from<0||to<0||from>=scrambleWords.length||to>=scrambleWords.length)return;
-  [scrambleWords[from],scrambleWords[to]]=[scrambleWords[to],scrambleWords[from]];
+function placeScrambleWord(origin,sourceIndex,destination){
+  if(destination.type==="slot"){
+    const targetIndex=destination.index;
+    if(origin==="bank"){
+      const [token]=scrambleBank.splice(sourceIndex,1),displaced=scrambleSlots[targetIndex];
+      scrambleSlots[targetIndex]=token;if(displaced)scrambleBank.push(displaced);
+    }else if(sourceIndex!==targetIndex){
+      [scrambleSlots[sourceIndex],scrambleSlots[targetIndex]]=[scrambleSlots[targetIndex],scrambleSlots[sourceIndex]];
+    }
+  }else if(destination.type==="bank"&&origin==="slot"){
+    const [token]=scrambleSlots.splice(sourceIndex,1,null);if(token)scrambleBank.push(token);
+  }
   $("scrambleFeedback").textContent="";$("scrambleFeedback").className="scramblefeedback";renderScrambleWords();
 }
-$("scrambleBoard").addEventListener("pointerdown",e=>{
-  const tile=e.target.closest(".scramble-word");if(!tile||scrambleLocked)return;
-  sentenceDrag={pointerId:e.pointerId,from:Number(tile.dataset.index),tile,startX:e.clientX,startY:e.clientY,moved:false};
+const scrambleCard=$("buildSent");
+scrambleCard.addEventListener("pointerdown",e=>{
+  const tile=e.target.closest(".answer-slot.filled,.scramble-word");if(!tile||scrambleLocked)return;
+  sentenceDrag={pointerId:e.pointerId,origin:tile.dataset.origin,index:Number(tile.dataset.index),tile,startX:e.clientX,startY:e.clientY,moved:false};
   tile.classList.add("dragging");tile.setPointerCapture(e.pointerId);e.preventDefault();
 });
-$("scrambleBoard").addEventListener("pointermove",e=>{
+scrambleCard.addEventListener("pointermove",e=>{
   if(!sentenceDrag||sentenceDrag.pointerId!==e.pointerId)return;
   const dx=e.clientX-sentenceDrag.startX,dy=e.clientY-sentenceDrag.startY;
   if(Math.abs(dx)+Math.abs(dy)>8)sentenceDrag.moved=true;
   if(sentenceDrag.moved){sentenceDrag.tile.style.transform=`translate(${dx}px, ${dy}px)`;e.preventDefault()}
 });
-$("scrambleBoard").addEventListener("pointerup",e=>{
+scrambleCard.addEventListener("pointerup",e=>{
   if(!sentenceDrag||sentenceDrag.pointerId!==e.pointerId)return;
   const drag=sentenceDrag;sentenceDrag=null;
   if(drag.moved){
-    const centerX=e.clientX,centerY=e.clientY;
-    const nearest=[...$("scrambleBoard").querySelectorAll(".scramble-word")].filter(tile=>tile!==drag.tile).sort((a,b)=>{
-      const ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();
-      return Math.hypot(ar.x+ar.width/2-centerX,ar.y+ar.height/2-centerY)-Math.hypot(br.x+br.width/2-centerX,br.y+br.height/2-centerY);
-    })[0];
-    if(nearest)swapScrambleWords(drag.from,Number(nearest.dataset.index));
+    const target=document.elementFromPoint(e.clientX,e.clientY),slot=target&&target.closest(".answer-slot"),bank=target&&target.closest(".scramble-bank");
+    if(slot)placeScrambleWord(drag.origin,drag.index,{type:"slot",index:Number(slot.dataset.index)});
+    else if(bank)placeScrambleWord(drag.origin,drag.index,{type:"bank"});
     else renderScrambleWords();
   }else drag.tile.classList.remove("dragging");
 });
-$("scrambleBoard").addEventListener("pointercancel",e=>{
+scrambleCard.addEventListener("pointercancel",e=>{
   if(!sentenceDrag||sentenceDrag.pointerId!==e.pointerId)return;
   sentenceDrag=null;renderScrambleWords();
 });
