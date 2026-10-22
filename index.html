@@ -31,7 +31,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
 #list{flex:1;min-height:0;overflow:visible;padding:0 4px;display:flex;flex-direction:column;gap:10px}
 .bar{display:block;height:18px;border-radius:9px;background:var(--line);overflow:hidden}
 .bar u{display:block;height:100%;background:var(--go);border-radius:9px}
-.deck .activity-progress{height:10px;margin:0}
+.deck .activity-progress{height:18px;margin:0}
 .activity-progress{margin:-2px 0 14px}
 .activity-progress .bar{height:14px}
 .link{background:none;text-decoration:underline;font-size:22px;opacity:.75;padding:18px;margin:0}
@@ -153,7 +153,7 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   .deck{padding:7px 16px;border-radius:20px}
   .deck b{font-size:clamp(24px,4.5vw,32px)}
   .deck span{font-size:clamp(15px,3vw,19px);margin:2px 0 5px}
-  .deck .activity-progress{height:8px}
+  .deck .activity-progress{height:18px}
   .footer .micbtn{width:54px;height:54px}
   .footer .link{font-size:19px;padding:12px 6px}
   .bondsvg{max-height:30vh}
@@ -312,7 +312,7 @@ function updateActivityProgress(id,key,size){
 }
 function blockMarkup(key,size,label){
   const state=activityProgress[key],pct=Math.round(100*state.progress/size);
-  return `<span style="margin-bottom:0">${label} · Block ${state.block} · ${state.progress} of ${size}</span><i class="bar activity-progress"><u style="width:${pct}%"></u></i>`;
+  return `<span style="margin-bottom:0">${state.progress} of ${size} ${label}</span><i class="bar activity-progress"><u style="width:${pct}%"></u></i>`;
 }
 // all words are one stack now; fold in progress saved under the old lists
 if(!Array.isArray(learned.all)){learned={all:[...new Set(Object.values(learned).flat())]};save()}
@@ -392,9 +392,9 @@ function home(){
   $("installApp").hidden=installed;
   $("list").innerHTML=
     `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
-    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b>${blockMarkup("reading",20,"Read sentences")}</button>`:"")+
-    (SENTS.length?`<button class="deck" data-act="scramble"><b>Build a sentence</b>${blockMarkup("building",10,"Put words in order")}</button>`:"")+
-    (MATH.length||MATH3.length?`<button class="deck" data-act="math"><b>Number bonds</b>${blockMarkup("math",20,"Add, subtract, and split")}</button>`:"");
+    (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b>${blockMarkup("reading",20,"read")}</button>`:"")+
+    (SENTS.length?`<button class="deck" data-act="scramble"><b>Build a sentence</b>${blockMarkup("building",10,"built")}</button>`:"")+
+    (MATH.length||MATH3.length?`<button class="deck" data-act="math"><b>Number bonds</b>${blockMarkup("math",20,"solved")}</button>`:"");
   show("home");
 }
 function showInstallHelp(){
