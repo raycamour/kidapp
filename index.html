@@ -63,6 +63,14 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
     repeating-linear-gradient(180deg,transparent 0 71px,var(--line) 71px 74px)}
 .word{font-size:clamp(64px,min(24vw,19vh),210px);font-weight:700;letter-spacing:.02em;line-height:1;width:100%;max-width:100%;padding:0 5%;text-align:center;white-space:nowrap}
 .sentence{font-size:clamp(48px,min(9.5vw,7vh),84px);font-weight:700;line-height:1.4;text-align:center;padding:0 6% 120px 16%}
+.scramble-card{display:flex;flex-direction:column;gap:16px;padding:24px;background-image:none;background-color:#e8eef8}
+.scramble-instruction{font-size:clamp(28px,5vw,40px);font-weight:700;text-align:center;margin:0}
+.scramble-board{flex:1;min-height:160px;display:flex;flex-wrap:wrap;align-content:flex-end;align-items:flex-end;justify-content:center;gap:14px;padding:18px 4px 28px;touch-action:none}
+.scramble-word{min-height:72px;max-width:100%;padding:10px 20px;border-radius:20px;background:#fff;color:var(--ink);font-size:clamp(26px,5.8vw,42px);font-weight:700;overflow-wrap:anywhere;box-shadow:0 6px 0 rgba(31,42,68,.22);touch-action:none;user-select:none;cursor:grab}
+.scramble-word.dragging{opacity:.65;cursor:grabbing;z-index:2}
+.scramblefeedback{min-height:42px;text-align:center;font-size:clamp(24px,4vw,32px);font-weight:700;margin:0}
+.scramblefeedback.correct{color:#12663e}
+.scramblefeedback.wrong{color:#a51e12}
 .card.pop .word,.card.pop .sentence{animation:pop .25s ease-out}
 @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.card.pop .word,.card.pop .sentence{animation:none}}
@@ -126,6 +134,9 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
   .bondsvg.three-on{max-height:23vh}
   .bondcard{padding:8px 4%;gap:2px}
   .choices button{min-height:66px}
+  .scramble-card{padding:14px;gap:8px}
+  .scramble-board{min-height:120px;gap:10px;padding:10px 2px 18px}
+  .scramble-word{min-height:58px;padding:8px 14px}
 }
 </style>
 </head>
@@ -160,6 +171,16 @@ h1{font-size:clamp(52px,10vw,88px);margin:24px 0 4px;line-height:1}
       <button class="speak" id="speak2" aria-label="Hear the sentence"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
     </div>
     <div class="actions one"><button class="know" id="next">Next sentence</button></div>
+  </section>
+
+  <section class="screen" id="buildSent">
+    <div class="top"><button class="back" id="buildBack">Home</button><div class="reccount" id="buildSentCount"></div></div>
+    <div class="card scramble-card">
+      <p class="scramble-instruction">Drag the words into the right order.</p>
+      <div class="scramble-board" id="scrambleBoard" aria-label="Scrambled sentence words"></div>
+    </div>
+    <p class="scramblefeedback" id="scrambleFeedback" aria-live="polite"></p>
+    <div class="actions one"><button class="know" id="checkScramble">Check sentence</button><button class="know" id="nextScramble" hidden>Next sentence</button></div>
   </section>
 
   <section class="screen" id="math">
@@ -302,6 +323,7 @@ function home(){
   $("list").innerHTML=
     `<button class="deck" data-act="words"><b>All words</b><span>${n} of ${all.length} learned</span><i class="bar"><u style="width:${pct}%"></u></i></button>`+
     (SENTS.length?`<button class="deck" data-act="sent"><b>Sentences</b><span style="margin-bottom:0">Read and hear a sentence</span></button>`:"")+
+    (SENTS.length?`<button class="deck" data-act="scramble"><b>Build a sentence</b><span style="margin-bottom:0">Put the words in the right order</span></button>`:"")+
     (MATH.length||MATH3.length?`<button class="deck" data-act="math"><b>Number bonds</b><span style="margin-bottom:0">Build totals with two or three parts</span></button>`:"");
   show("home");
 }
@@ -403,9 +425,73 @@ function nextSent(){
 }
 function startSent(){sq=[];show("sent");nextSent()}
 
+let scrambleQueue=[],scrambleTarget="",scrambleWords=[],scrambleIndex=0,scrambleLocked=false,sentenceDrag=null;
+function renderScrambleWords(){
+  const board=$("scrambleBoard");board.innerHTML="";
+  scrambleWords.forEach((word,index)=>{
+    const tile=document.createElement("button");tile.type="button";tile.className="scramble-word";tile.dataset.index=index;
+    tile.setAttribute("aria-label",`Drag word ${word}`);tile.textContent=word;board.appendChild(tile);
+  });
+}
+function nextScrambleSentence(){
+  if(!SENTS.length)return;
+  if(!scrambleQueue.length){scrambleQueue=shuffle(SENTS.slice());if(scrambleQueue.length>1&&scrambleQueue[scrambleQueue.length-1]===scrambleTarget)scrambleQueue.unshift(scrambleQueue.pop())}
+  scrambleTarget=scrambleQueue.pop();scrambleWords=shuffle(scrambleTarget.trim().split(/\s+/));
+  if(scrambleWords.length>1&&scrambleWords.join(" ")===scrambleTarget.trim())scrambleWords.push(scrambleWords.shift());
+  scrambleLocked=false;scrambleIndex++;
+  $("buildSentCount").textContent=`Sentence ${scrambleIndex}`;
+  $("scrambleFeedback").textContent="";$("scrambleFeedback").className="scramblefeedback";
+  $("checkScramble").hidden=false;$("nextScramble").hidden=true;
+  renderScrambleWords();
+}
+function startScramble(){scrambleQueue=[];scrambleIndex=0;show("buildSent");nextScrambleSentence()}
+function checkScrambleSentence(){
+  const correct=scrambleWords.join(" ")===scrambleTarget.trim();
+  const feedback=$("scrambleFeedback");
+  feedback.className="scramblefeedback "+(correct?"correct":"wrong");
+  feedback.textContent=correct?"✓ Great job! The sentence is in order.":"Try again. Move the words around.";
+  if(correct){scrambleLocked=true;$("checkScramble").hidden=true;$("nextScramble").hidden=false}
+}
+function swapScrambleWords(from,to){
+  if(from===to||from<0||to<0||from>=scrambleWords.length||to>=scrambleWords.length)return;
+  [scrambleWords[from],scrambleWords[to]]=[scrambleWords[to],scrambleWords[from]];
+  $("scrambleFeedback").textContent="";$("scrambleFeedback").className="scramblefeedback";renderScrambleWords();
+}
+$("scrambleBoard").addEventListener("pointerdown",e=>{
+  const tile=e.target.closest(".scramble-word");if(!tile||scrambleLocked)return;
+  sentenceDrag={pointerId:e.pointerId,from:Number(tile.dataset.index),tile,startX:e.clientX,startY:e.clientY,moved:false};
+  tile.classList.add("dragging");tile.setPointerCapture(e.pointerId);e.preventDefault();
+});
+$("scrambleBoard").addEventListener("pointermove",e=>{
+  if(!sentenceDrag||sentenceDrag.pointerId!==e.pointerId)return;
+  const dx=e.clientX-sentenceDrag.startX,dy=e.clientY-sentenceDrag.startY;
+  if(Math.abs(dx)+Math.abs(dy)>8)sentenceDrag.moved=true;
+  if(sentenceDrag.moved){sentenceDrag.tile.style.transform=`translate(${dx}px, ${dy}px)`;e.preventDefault()}
+});
+$("scrambleBoard").addEventListener("pointerup",e=>{
+  if(!sentenceDrag||sentenceDrag.pointerId!==e.pointerId)return;
+  const drag=sentenceDrag;sentenceDrag=null;
+  if(drag.moved){
+    const centerX=e.clientX,centerY=e.clientY;
+    const nearest=[...$("scrambleBoard").querySelectorAll(".scramble-word")].filter(tile=>tile!==drag.tile).sort((a,b)=>{
+      const ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();
+      return Math.hypot(ar.x+ar.width/2-centerX,ar.y+ar.height/2-centerY)-Math.hypot(br.x+br.width/2-centerX,br.y+br.height/2-centerY);
+    })[0];
+    if(nearest)swapScrambleWords(drag.from,Number(nearest.dataset.index));
+    else renderScrambleWords();
+  }else drag.tile.classList.remove("dragging");
+});
+$("scrambleBoard").addEventListener("pointercancel",e=>{
+  if(!sentenceDrag||sentenceDrag.pointerId!==e.pointerId)return;
+  sentenceDrag=null;renderScrambleWords();
+});
+$("checkScramble").addEventListener("click",checkScrambleSentence);
+$("nextScramble").addEventListener("click",nextScrambleSentence);
+$("buildBack").addEventListener("click",home);
+
 $("list").addEventListener("click",e=>{
   const b=e.target.closest(".deck");if(!b)return;
-  if(b.dataset.act==="sent")startSent();else if(b.dataset.act==="math")startMath();else start();
+  if(b.dataset.act==="sent")startSent();else if(b.dataset.act==="scramble")startScramble();else if(b.dataset.act==="math")startMath();else start();
 });
 $("speak").addEventListener("click",()=>say(queue[cardIndex]));
 $("speak2").addEventListener("click",()=>say(cur));
