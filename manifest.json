@@ -1,10 +1,17 @@
 
 {
-  "name": "Kid App",
-  "short_name": "KidApp",
-  "start_url": "./index.html",
+  "id": "./",
+  "name": "Word Cards and Math",
+  "short_name": "Word Cards",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffc83d",
   "theme_color": "#ffc83d",
-  "icons": [{ "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }]
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }
